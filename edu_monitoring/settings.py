@@ -150,13 +150,13 @@ _static_dir = BASE_DIR / 'static'
 if _static_dir.exists():
     STATICFILES_DIRS.append(_static_dir)
 
-# React build static papkasi
+# React build static papkasi - static papkaning o'zi qo'shiladi
 _react_static_dir = BASE_DIR / 'frontend' / 'build' / 'static'
 if _react_static_dir.exists():
-    STATICFILES_DIRS.append(BASE_DIR / 'frontend' / 'build')
+    STATICFILES_DIRS.append(_react_static_dir)
 
-# Whitenoise storage - Railway uchun
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Whitenoise storage - Railway uchun (oddiy versiya)
+STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
