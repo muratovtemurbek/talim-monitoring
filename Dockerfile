@@ -8,12 +8,12 @@ ENV PYTHONUNBUFFERED=1
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies (Python + Node.js)
+# Install system dependencies (Python + Node.js 20)
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     curl \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
@@ -26,7 +26,7 @@ COPY . .
 
 # Build React frontend
 WORKDIR /app/frontend
-RUN npm ci && npm run build
+RUN npm install && npm run build
 
 # Back to main directory
 WORKDIR /app
