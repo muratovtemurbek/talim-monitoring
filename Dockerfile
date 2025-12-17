@@ -7,10 +7,13 @@ ENV PYTHONUNBUFFERED=1
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (Python + Node.js)
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -20,7 +23,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
-# Collect static files
+# Build React frontend
+WORKDIR /app/frontend
+RUN npm ci && npm run build
+
+# Back to main directory
+WORKDIR /app
+
+# Collect static files (Django + React)
 RUN python manage.py collectstatic --noinput
 
 # Expose port

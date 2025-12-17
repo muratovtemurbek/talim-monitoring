@@ -17,8 +17,9 @@ ENV
 .vscode
 *.swp
 
-# Frontend (alohida deploy)
-frontend
+# Frontend build artifacts (source code kerak)
+frontend/node_modules
+frontend/build
 
 # Local files
 *.sqlite3

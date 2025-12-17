@@ -1,9 +1,11 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.views.generic import TemplateView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+import os
 
 
 def api_root(request):
@@ -32,9 +34,13 @@ def api_root(request):
     })
 
 
+# React frontend index.html mavjudligini tekshirish
+REACT_BUILD_PATH = os.path.join(settings.BASE_DIR, 'frontend', 'build')
+SERVE_REACT = os.path.exists(os.path.join(REACT_BUILD_PATH, 'index.html'))
+
 urlpatterns = [
-    # Root URL - API Info
-    path('', api_root, name='api_root'),
+    # API Root (faqat React build yo'q bo'lsa)
+    path('api-info/', api_root, name='api_root'),
 
     # Django Admin
     path('admin/', admin.site.urls),
@@ -61,3 +67,12 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# React Frontend - barcha boshqa URL'larni React'ga yo'naltirish
+if SERVE_REACT:
+    urlpatterns += [
+        re_path(r'^(?!api/|admin/|media/|static/).*$', TemplateView.as_view(template_name='index.html'), name='react_app'),
+    ]
+else:
+    # React build yo'q bo'lsa, root URL'da API info ko'rsatish
+    urlpatterns.insert(0, path('', api_root, name='home'))

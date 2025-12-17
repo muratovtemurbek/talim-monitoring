@@ -80,7 +80,10 @@ ROOT_URLCONF = 'edu_monitoring.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [
+            BASE_DIR / 'templates',
+            BASE_DIR / 'frontend' / 'build',  # React build papkasi
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -139,12 +142,18 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Static papka mavjud bo'lsagina qo'shiladi
+# Static papkalar
+STATICFILES_DIRS = []
+
+# Django static papkasi
 _static_dir = BASE_DIR / 'static'
 if _static_dir.exists():
-    STATICFILES_DIRS = [_static_dir]
-else:
-    STATICFILES_DIRS = []
+    STATICFILES_DIRS.append(_static_dir)
+
+# React build static papkasi
+_react_static_dir = BASE_DIR / 'frontend' / 'build' / 'static'
+if _react_static_dir.exists():
+    STATICFILES_DIRS.append(BASE_DIR / 'frontend' / 'build')
 
 # Whitenoise storage - Railway uchun
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
