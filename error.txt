@@ -1,66 +1,92 @@
-  File "/app/edu_monitoring/urls.py", line 16, in <module>
-    path('api/auth/', include('users.urls')),
-                      ^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/urls/conf.py", line 38, in include
-ERROR Invalid HTTP_HOST header: 'web-production-f0650.up.railway.app'. You may need to add 'web-production-f0650.up.railway.app' to ALLOWED_HOSTS.
-    return _bootstrap._gcd_import(name[level:], package, level)
-Traceback (most recent call last):
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
-    response = get_response(request)
-  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
-               ^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
-  File "/usr/local/lib/python3.11/site-packages/django/utils/deprecation.py", line 133, in __call__
-  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
-  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
-  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
-  File "/app/users/urls.py", line 2, in <module>
-    from .views import (
-  File "/app/users/views.py", line 13, in <module>
-    from reportlab.lib.pagesizes import A4
-ModuleNotFoundError: No module named 'reportlab'
-    response = self.process_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/middleware/common.py", line 48, in process_request
-    host = request.get_host()
-           ^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/http/request.py", line 150, in get_host
-    raise DisallowedHost(msg)
-django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: 'web-production-f0650.up.railway.app'. You may need to add 'web-production-f0650.up.railway.app' to ALLOWED_HOSTS.
-[2025-12-17 20:47:59 +0500] [2] [ERROR] Error handling request /favicon.ico
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
-    response = get_response(request)
-               ^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/utils/deprecation.py", line 133, in __call__
-    response = self.process_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/middleware/common.py", line 48, in process_request
-    host = request.get_host()
-           ^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/http/request.py", line 150, in get_host
-    raise DisallowedHost(msg)
-django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: 'web-production-f0650.up.railway.app'. You may need to add 'web-production-f0650.up.railway.app' to ALLOWED_HOSTS.
-During handling of the above exception, another exception occurred:
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
-  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 57, in inner
-  File "/usr/local/lib/python3.11/site-packages/django/views/debug.py", line 67, in technical_500_response
-    response = response_for_exception(request, exc)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    html = reporter.get_traceback_html()
-    response = get_response(request)
+
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-               ^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 130, in response_for_exception
-  File "/usr/local/lib/python3.11/site-packages/corsheaders/middleware.py", line 56, in __call__
-    response = debug.technical_500_response(
-    result = self.get_response(request)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/utils/deprecation.py", line 134, in __call__
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 181, in handle_uncaught_exception
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 140, in response_for_exception
+    return debug.technical_500_response(request, *exc_info)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/urls/base.py", line 24, in resolve
+  File "/usr/local/lib/python3.11/site-packages/django/views/debug.py", line 410, in get_traceback_html
+    return get_resolver(urlconf).resolve(path)
+    c = Context(self.get_traceback_data(), use_l10n=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py", line 663, in resolve
+  File "/usr/local/lib/python3.11/site-packages/django/views/debug.py", line 393, in get_traceback_data
+    for pattern in self.url_patterns:
+    c["raising_view_name"] = get_caller(self.request)
+                   ^^^^^^^^^^^^^^^^^
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/utils/functional.py", line 57, in __get__
+  File "/usr/local/lib/python3.11/site-packages/django/views/debug.py", line 100, in get_caller
+    res = instance.__dict__[self.name] = self.func(instance)
+    resolver_match = resolve(request.path)
                                          ^^^^^^^^^^^^^^^^^^^
+                     ^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py", line 715, in url_patterns
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+    patterns = getattr(self.urlconf_module, "urlpatterns", self.urlconf_module)
+                       ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/utils/functional.py", line 57, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py", line 708, in urlconf_module
+    return import_module(self.urlconf_name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    urlconf_module = import_module(urlconf_module)
+    from google import genai  # YANGI kutubxona
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    from .views import (
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "/app/ai_assistant/views.py", line 1, in <module>
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "/app/ai_assistant/urls.py", line 2, in <module>
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "/app/edu_monitoring/urls.py", line 24, in <module>
+    path('api/ai/', include('ai_assistant.urls')),
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/urls/conf.py", line 38, in include
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 181, in handle_uncaught_exception
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 140, in response_for_exception
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+    return debug.technical_500_response(request, *exc_info)
+    response = handle_uncaught_exception(
+ImportError: cannot import name 'genai' from 'google' (unknown location)
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 57, in inner
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    response = response_for_exception(request, exc)
+Traceback (most recent call last):
+During handling of the above exception, another exception occurred:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/utils/deprecation.py", line 134, in __call__
+    response = response or self.get_response(request)
+  File "/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py", line 663, in resolve
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    for pattern in self.url_patterns:
+  File "/usr/local/lib/python3.11/site-packages/django/views/debug.py", line 67, in technical_500_response
+                   ^^^^^^^^^^^^^^^^^
+    html = reporter.get_traceback_html()
+  File "/usr/local/lib/python3.11/site-packages/django/utils/functional.py", line 57, in __get__
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/usr/local/lib/python3.11/site-packages/django/views/debug.py", line 410, in get_traceback_html
     c = Context(self.get_traceback_data(), use_l10n=False)
                 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -73,14 +99,12 @@ Traceback (most recent call last):
   File "/usr/local/lib/python3.11/site-packages/django/urls/base.py", line 24, in resolve
     return get_resolver(urlconf).resolve(path)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py", line 663, in resolve
-    for pattern in self.url_patterns:
-                   ^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/utils/functional.py", line 57, in __get__
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
     res = instance.__dict__[self.name] = self.func(instance)
-  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
-  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
   File "/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py", line 715, in url_patterns
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
     patterns = getattr(self.urlconf_module, "urlpatterns", self.urlconf_module)
                        ^^^^^^^^^^^^^^^^^^^
   File "/usr/local/lib/python3.11/site-packages/django/utils/functional.py", line 57, in __get__
@@ -94,26 +118,4 @@ Traceback (most recent call last):
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
-  File "/app/edu_monitoring/urls.py", line 16, in <module>
-    path('api/auth/', include('users.urls')),
-                      ^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/urls/conf.py", line 38, in include
-    urlconf_module = import_module(urlconf_module)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py", line 715, in url_patterns
-  File "/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py", line 715, in url_patterns
-  File "/app/edu_monitoring/urls.py", line 16, in <module>
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
-               ^^^^^^^^^^^^^^^^^^^^^
-    return import_module(self.urlconf_name)
-                             ^^^^^^^^^^^^^^^^^^^^^^^^
-    return self.get_response(request)
-  File "/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py", line 708, in urlconf_module
-    response = response or self.get_response(request)
-  File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
-    response = handle_uncaught_exception(
-  File "/app/edu_monitoring/urls.py", line 16, in <module>
-Railway rate limit of 500 logs/sec reached for replica, update your application to reduce the logging rate. Messages dropped: 734
