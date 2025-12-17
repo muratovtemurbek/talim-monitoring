@@ -18,6 +18,9 @@ Pillow==10.1.0
 cloudinary==1.36.0
 django-cloudinary-storage==0.3.0
 
+# Excel export/import
+openpyxl==3.1.2
+
 # Environment
 python-dotenv==1.0.0
 
