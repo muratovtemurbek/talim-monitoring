@@ -3,15 +3,19 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Consultation
-from .serializers import ConsultationSerializer
+from .serializers import ConsultationSerializer, ConsultationCreateSerializer
 from teachers.models import Teacher
 
 
 class ConsultationViewSet(viewsets.ModelViewSet):
     """Maslahatlar CRUD"""
     queryset = Consultation.objects.select_related('teacher', 'student').all()
-    serializer_class = ConsultationSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ConsultationCreateSerializer
+        return ConsultationSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -22,10 +26,22 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         except Teacher.DoesNotExist:
             return Consultation.objects.none()
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
         """Maslahat yaratish"""
-        student = Teacher.objects.get(user=self.request.user)
+        try:
+            student = Teacher.objects.get(user=request.user)
+        except Teacher.DoesNotExist:
+            return Response(
+                {"error": "O'qituvchi profili topilmadi. Admin bilan bog'laning."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         serializer.save(student=student)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'])
     def my_consultations(self, request):

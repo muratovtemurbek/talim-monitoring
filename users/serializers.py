@@ -46,3 +46,25 @@ class ChangePasswordSerializer(serializers.Serializer):
     """Parol o'zgartirish"""
     old_password = serializers.CharField(required=True, write_only=True)
     new_password = serializers.CharField(required=True, write_only=True, min_length=8)
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Parol tiklash so'rovi"""
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Bu email bilan foydalanuvchi topilmadi")
+        return value
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Parol tiklashni tasdiqlash"""
+    token = serializers.UUIDField(required=True)
+    new_password = serializers.CharField(required=True, write_only=True, min_length=8)
+    new_password2 = serializers.CharField(required=True, write_only=True, min_length=8)
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password2']:
+            raise serializers.ValidationError({"new_password": "Parollar mos kelmadi"})
+        return attrs

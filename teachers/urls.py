@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import TeacherViewSet, TeacherActivityViewSet
 
 router = DefaultRouter()
-router.register(r'teachers', TeacherViewSet, basename='teacher')
+router.register(r'', TeacherViewSet, basename='teacher')  # ✅ Bo'sh string
 router.register(r'activities', TeacherActivityViewSet, basename='activity')
 
 urlpatterns = [

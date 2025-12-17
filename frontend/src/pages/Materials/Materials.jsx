@@ -1,459 +1,336 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import {
   Container,
-  Typography,
-  Box,
   Grid,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
+  Box,
   Tabs,
   Tab,
-  TextField,
-  InputAdornment,
+  Button,
+  Fab,
+  Pagination,
   Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from '@mui/material';
-import {
-  Add,
-  Search,
-  Description,
-  Visibility,
-  Download,
-  Edit,
-  Delete,
-  CheckCircle,
-  HourglassEmpty,
-  GetApp,
-} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Download as DownloadIcon, BookOpen, Filter } from 'lucide-react';
+import MaterialCard from '../../components/Materials/MaterialCard';
+import UploadModal from '../../components/Materials/UploadModal';
+import PageHeader from '../../components/Common/PageHeader';
+import SearchBar from '../../components/Common/SearchBar';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import EmptyState from '../../components/Common/EmptyState';
 import axiosInstance from '../../api/axios';
 import { toast } from 'react-toastify';
-import Pagination from '../../components/Common/Pagination';
-import AdvancedFilter from '../../components/Common/AdvancedFilter';
+import { useSelector } from 'react-redux';
 
 const Materials = () => {
-  const { user } = useSelector((state) => state.auth);
   const [materials, setMaterials] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [tabValue, setTabValue] = useState(0);
-  const [search, setSearch] = useState('');
-  const [subject, setSubject] = useState('');
-
-  // Pagination
+  const [searchQuery, setSearchQuery] = useState('');
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 9;
 
-  // Filters
-  const [filters, setFilters] = useState({});
-
-  // Dialog
-  const [createOpen, setCreateOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    subject: '',
-    grade: '',
-    file: null,
-  });
-
-  const subjects = [
-    { value: 'math', label: 'Matematika' },
-    { value: 'physics', label: 'Fizika' },
-    { value: 'chemistry', label: 'Kimyo' },
-    { value: 'biology', label: 'Biologiya' },
-    { value: 'informatics', label: 'Informatika' },
-    { value: 'english', label: 'Ingliz tili' },
-    { value: 'uzbek', label: 'O\'zbek tili' },
-    { value: 'russian', label: 'Rus tili' },
-    { value: 'history', label: 'Tarix' },
-    { value: 'geography', label: 'Geografiya' },
-  ];
+  const user = useSelector((state) => state.auth.user);
+  const isTeacher = user?.role === 'teacher';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   useEffect(() => {
     fetchMaterials();
-  }, [tabValue, page, filters]);
+  }, [tabValue]);
+
+  useEffect(() => {
+    filterMaterials();
+  }, [materials, searchQuery]);
 
   const fetchMaterials = async () => {
     setLoading(true);
     try {
-      const params = {
-        page,
-        ...filters,
-      };
+      let url = '/materials/';
+      if (tabValue === 1) url = '/materials/my_materials/';
+      if (tabValue === 2) url = '/materials/pending/';
 
-      if (search) params.search = search;
-
-      let endpoint = '/materials/';
-      if (tabValue === 1) {
-        endpoint = '/materials/my_materials/';
-      }
-
-      const response = await axiosInstance.get(endpoint, { params });
-
-      setMaterials(response.data.results || response.data);
-      setTotalPages(Math.ceil((response.data.count || 0) / 10));
-      setTotalItems(response.data.count || 0);
+      const response = await axiosInstance.get(url);
+      const data = response.data.results || response.data;
+      setMaterials(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Xatolik:', error);
+      console.error('Materiallarni yuklashda xatolik:', error);
       toast.error('Materiallarni yuklashda xatolik');
+      setMaterials([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = () => {
-    setPage(1);
-    fetchMaterials();
-  };
-
-  const handleFilter = (newFilters) => {
-    setFilters(newFilters);
-    setPage(1);
-  };
-
-  const handleClearFilter = () => {
-    setFilters({});
-    setPage(1);
-  };
-
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleFileChange = (e) => {
-    setFormData({
-      ...formData,
-      file: e.target.files[0],
-    });
-  };
-
-  const handleCreate = async () => {
-    if (!formData.title || !formData.subject || !formData.grade || !formData.file) {
-      toast.error('Barcha maydonlarni to\'ldiring!');
+  const filterMaterials = () => {
+    if (!searchQuery.trim()) {
+      setFilteredMaterials(materials);
       return;
     }
 
+    const filtered = materials.filter((m) =>
+      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.teacher_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredMaterials(filtered);
+    setPage(1);
+  };
+
+  const handleUpload = async (formData) => {
     const data = new FormData();
     data.append('title', formData.title);
     data.append('description', formData.description);
     data.append('subject', formData.subject);
     data.append('grade', formData.grade);
-    data.append('file', formData.file);
+    
+    // Fayl nomini qisqartirish (90+ belgi bo'lsa)
+    let file = formData.file;
+    if (file.name.length > 90) {
+      const ext = file.name.split('.').pop();
+      const baseName = file.name.substring(0, 85);
+      const shortName = baseName + '.' + ext;
+      file = new File([file], shortName, { type: file.type });
+    }
+    data.append('file', file);
 
+    await axiosInstance.post('/materials/', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    
+    fetchMaterials();
+  };
+
+  const handleDownload = async (material) => {
     try {
-      await axiosInstance.post('/materials/', data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      toast.success('Material yuklandi!');
-      setCreateOpen(false);
-      fetchMaterials();
-      setFormData({
-        title: '',
-        description: '',
-        subject: '',
-        grade: '',
-        file: null,
-      });
+      window.open(material.file, '_blank');
+      await axiosInstance.post(`/materials/${material.id}/increment_download/`);
+      toast.success('Yuklab olinmoqda...');
     } catch (error) {
-      console.error('Xatolik:', error);
-      toast.error('Material yuklashda xatolik');
+      toast.error('Xatolik yuz berdi');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Rostdan ham o\'chirmoqchimisiz?')) return;
-
-    try {
-      await axiosInstance.delete(`/materials/${id}/`);
-      toast.success('Material o\'chirildi');
-      fetchMaterials();
-    } catch (error) {
-      console.error('Xatolik:', error);
-      toast.error('O\'chirishda xatolik');
+  const handleDelete = async (material) => {
+    if (window.confirm(`"${material.title}" materialini o'chirishga ishonchingiz komilmi?`)) {
+      try {
+        await axiosInstance.delete(`/materials/${material.id}/`);
+        toast.success("Material o'chirildi!");
+        fetchMaterials();
+      } catch (error) {
+        toast.error("O'chirishda xatolik");
+      }
     }
   };
 
-  const handleApprove = async (id) => {
-    try {
-      await axiosInstance.post(`/materials/${id}/approve/`);
-      toast.success('Material tasdiqlandi!');
-      fetchMaterials();
-    } catch (error) {
-      console.error('Xatolik:', error);
-      toast.error('Tasdiqlashda xatolik');
+  const handleApprove = async (material) => {
+    if (window.confirm(`"${material.title}" materialini tasdiqlaysizmi?`)) {
+      try {
+        await axiosInstance.post(`/materials/${material.id}/approve/`);
+        toast.success('Material tasdiqlandi! +10 ball');
+        fetchMaterials();
+      } catch (error) {
+        toast.error('Tasdiqlashda xatolik');
+      }
     }
   };
 
-  const handleDownload = async (id) => {
+  const handleView = async (material) => {
     try {
-      await axiosInstance.post(`/materials/${id}/increment_download/`);
+      await axiosInstance.post(`/materials/${material.id}/increment_view/`);
+      window.open(material.file, '_blank');
     } catch (error) {
-      console.error('Xatolik:', error);
+      console.error('View increment error:', error);
     }
   };
 
-  const handleExportExcel = async () => {
+  const handleExport = async () => {
     try {
-      const response = await axiosInstance.get('/auth/export/materials/excel/', {
-        responseType: 'blob'
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `materiallar_${new Date().toISOString().split('T')[0]}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      toast.success('Excel yuklab olindi!');
+      toast.info('Excel eksport qilinmoqda...');
+      window.open(`${axiosInstance.defaults.baseURL}/export/materials/excel/`, '_blank');
     } catch (error) {
-      console.error('Xatolik:', error);
-      toast.error('Yuklab olishda xatolik');
+      toast.error('Eksport xatolik');
     }
+  };
+
+  // Pagination
+  const totalPages = Math.ceil(filteredMaterials.length / itemsPerPage);
+  const paginatedMaterials = filteredMaterials.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
+  const getTabLabel = (index) => {
+    const labels = ['Barcha materiallar', "Mening materiallarim", 'Tasdiqlanmagan'];
+    const counts = [materials.length, materials.length, materials.length];
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {labels[index]}
+        <Chip
+          label={counts[index]}
+          size="small"
+          sx={{
+            bgcolor: tabValue === index ? 'primary.main' : 'grey.300',
+            color: tabValue === index ? 'white' : 'text.secondary',
+            fontWeight: 700,
+          }}
+        />
+      </Box>
+    );
   };
 
   return (
-    <Container maxWidth="lg">
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center' }}>
-          <Description sx={{ mr: 1 }} />
-          Materiallar
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<GetApp />}
-            onClick={handleExportExcel}
-            size="small"
-          >
-            Excel
-          </Button>
-          {user?.role === 'teacher' && (
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setCreateOpen(true)}
-            >
-              Yangi material
-            </Button>
-          )}
-        </Box>
-      </Box>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        pt: 4,
+        pb: 6,
+      }}
+    >
+      <Container maxWidth="xl">
+        {/* Header */}
+        <PageHeader
+          title="Materiallar"
+          subtitle="O'quv materiallari va resurslar"
+          icon={BookOpen}
+          action={isAdmin ? 'Excel Export' : null}
+          onAction={isAdmin ? handleExport : null}
+        />
 
-      {/* Search & Filter */}
-      <Box sx={{ mb: 2 }}>
-        <TextField
-          fullWidth
-          placeholder="Material qidirish..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-            endAdornment: (
-              <Button onClick={handleSearch}>Qidirish</Button>
-            ),
+        {/* Tabs & Search */}
+        <Box
+          sx={{
+            bgcolor: 'rgba(255,255,255,0.95)',
+            borderRadius: 3,
+            p: 2,
+            mb: 3,
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
           }}
-          sx={{ mb: 2 }}
-        />
+        >
+          <Tabs
+            value={tabValue}
+            onChange={(e, v) => {
+              setTabValue(v);
+              setPage(1);
+            }}
+            sx={{ mb: 2 }}
+          >
+            <Tab label={getTabLabel(0)} />
+            {isTeacher && <Tab label={getTabLabel(1)} />}
+            {isAdmin && <Tab label={getTabLabel(2)} />}
+          </Tabs>
 
-        <AdvancedFilter
-          onFilter={handleFilter}
-          onClear={handleClearFilter}
-          subjects={subjects}
-        />
-      </Box>
-
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)}>
-          <Tab label="Barcha materiallar" />
-          {user?.role === 'teacher' && <Tab label="Mening materiallarim" />}
-        </Tabs>
-      </Box>
-
-      {/* Materials Grid */}
-      {loading ? (
-        <Typography>Yuklanmoqda...</Typography>
-      ) : materials.length === 0 ? (
-        <Typography>Material topilmadi</Typography>
-      ) : (
-        <>
-          <Grid container spacing={3}>
-            {materials.map((material) => (
-              <Grid item xs={12} sm={6} md={4} key={material.id}>
-                <Card>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="h6" noWrap>
-                        {material.title}
-                      </Typography>
-                      {material.is_approved ? (
-                        <Chip
-                          icon={<CheckCircle />}
-                          label="Tasdiqlangan"
-                          color="success"
-                          size="small"
-                        />
-                      ) : (
-                        <Chip
-                          icon={<HourglassEmpty />}
-                          label="Kutilmoqda"
-                          color="warning"
-                          size="small"
-                        />
-                      )}
-                    </Box>
-
-                    <Typography variant="body2" color="textSecondary" noWrap>
-                      {material.description}
-                    </Typography>
-
-                    <Box sx={{ mt: 2 }}>
-                      <Chip label={subjects.find(s => s.value === material.subject)?.label} size="small" sx={{ mr: 1 }} />
-                      <Chip label={`${material.grade}-sinf`} size="small" />
-                    </Box>
-
-                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="caption">
-                        👁 {material.views} • ⬇ {material.downloads}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {new Date(material.created_at).toLocaleDateString('uz-UZ')}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-
-                  <CardActions>
-                    <Button
-                      size="small"
-                      startIcon={<Download />}
-                      href={material.file}
-                      target="_blank"
-                      onClick={() => handleDownload(material.id)}
-                    >
-                      Yuklab olish
-                    </Button>
-
-                    {user?.role === 'teacher' && material.teacher === user.id && (
-                      <IconButton size="small" onClick={() => handleDelete(material.id)}>
-                        <Delete />
-                      </IconButton>
-                    )}
-
-                    {user?.role === 'admin' && !material.is_approved && (
-                      <Button
-                        size="small"
-                        color="success"
-                        onClick={() => handleApprove(material.id)}
-                      >
-                        Tasdiqlash
-                      </Button>
-                    )}
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-
-          {/* Pagination */}
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(e, value) => setPage(value)}
-            totalItems={totalItems}
+          <SearchBar
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Material, o'qituvchi yoki maktab nomi..."
           />
-        </>
-      )}
+        </Box>
 
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Yangi material yuklash</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-            <TextField
-              label="Sarlavha"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              fullWidth
-              required
-            />
-
-            <TextField
-              label="Tavsif"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              multiline
-              rows={3}
-              fullWidth
-            />
-
-            <FormControl fullWidth required>
-              <InputLabel>Fan</InputLabel>
-              <Select
-                name="subject"
-                value={formData.subject}
-                onChange={handleInputChange}
-                label="Fan"
-              >
-                {subjects.map((sub) => (
-                  <MenuItem key={sub.value} value={sub.value}>
-                    {sub.label}
-                  </MenuItem>
+        {/* Content */}
+        {loading ? (
+          <LoadingSpinner message="Materiallar yuklanmoqda..." />
+        ) : filteredMaterials.length === 0 ? (
+          <EmptyState
+            icon={BookOpen}
+            title="Materiallar topilmadi"
+            message={
+              searchQuery
+                ? "Qidiruv bo'yicha hech narsa topilmadi. Boshqa so'z bilan izlab ko'ring."
+                : tabValue === 1
+                ? "Siz hali hech qanday material yuklamagansiz."
+                : "Bu bo'limda hozircha materiallar yo'q."
+            }
+            action={isTeacher && tabValue === 1 ? 'Material yuklash' : null}
+            onAction={isTeacher && tabValue === 1 ? () => setUploadModalOpen(true) : null}
+          />
+        ) : (
+          <>
+            {/* Materials Grid */}
+            <Grid container spacing={3}>
+              <AnimatePresence>
+                {paginatedMaterials.map((material, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={material.id}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                    >
+                      <MaterialCard
+                        material={material}
+                        onDownload={handleDownload}
+                        onDelete={isTeacher ? handleDelete : null}
+                        onApprove={isAdmin ? handleApprove : null}
+                        onView={handleView}
+                        userRole={user?.role}
+                      />
+                    </motion.div>
+                  </Grid>
                 ))}
-              </Select>
-            </FormControl>
+              </AnimatePresence>
+            </Grid>
 
-            <TextField
-              label="Sinf"
-              name="grade"
-              type="number"
-              value={formData.grade}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              inputProps={{ min: 1, max: 11 }}
-            />
-
-            <Button variant="outlined" component="label" fullWidth>
-              Fayl tanlash
-              <input type="file" hidden onChange={handleFileChange} />
-            </Button>
-            {formData.file && (
-              <Typography variant="caption">{formData.file.name}</Typography>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(e, value) => setPage(value)}
+                  size="large"
+                  sx={{
+                    '& .MuiPaginationItem-root': {
+                      bgcolor: 'rgba(255,255,255,0.9)',
+                      '&:hover': {
+                        bgcolor: 'white',
+                      },
+                    },
+                    '& .Mui-selected': {
+                      bgcolor: 'white !important',
+                    },
+                  }}
+                />
+              </Box>
             )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateOpen(false)}>Bekor qilish</Button>
-          <Button onClick={handleCreate} variant="contained">
-            Yuklash
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+          </>
+        )}
+
+        {/* FAB */}
+        {isTeacher && (
+          <Fab
+            color="primary"
+            onClick={() => setUploadModalOpen(true)}
+            sx={{
+              position: 'fixed',
+              bottom: 32,
+              right: 32,
+              background: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
+              width: 64,
+              height: 64,
+              boxShadow: '0 8px 32px rgba(99,102,241,0.4)',
+              '&:hover': {
+                transform: 'scale(1.1)',
+                boxShadow: '0 12px 48px rgba(99,102,241,0.6)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <Plus size={28} />
+          </Fab>
+        )}
+
+        {/* Upload Modal */}
+        <UploadModal
+          open={uploadModalOpen}
+          onClose={() => setUploadModalOpen(false)}
+          onUpload={handleUpload}
+        />
+      </Container>
+    </Box>
   );
 };
 

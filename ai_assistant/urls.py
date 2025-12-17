@@ -1,10 +1,14 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import ChatHistoryViewSet
-
-router = DefaultRouter()
-router.register(r'', ChatHistoryViewSet, basename='chat')
+from django.urls import path
+from .views import (
+    AIAssistantView,
+    AIChatHistoryView,
+    AILessonPlanView,
+    AITestGeneratorView,
+)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('chat/', AIAssistantView.as_view(), name='ai-chat'),
+    path('history/', AIChatHistoryView.as_view(), name='ai-history'),
+    path('lesson-plan/', AILessonPlanView.as_view(), name='ai-lesson-plan'),
+    path('generate-test/', AITestGeneratorView.as_view(), name='ai-generate-test'),
 ]

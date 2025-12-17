@@ -7,8 +7,11 @@ export const login = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post('/auth/login/', credentials);
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+
+      // Token auth uchun
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Login xatolik');
@@ -47,14 +50,13 @@ export const logout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
-      await axiosInstance.post('/auth/logout/', { refresh: refreshToken });
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      await axiosInstance.post('/auth/logout/');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     } catch (error) {
       // Xatolik bo'lsa ham logout qilamiz
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
   }
 );
@@ -62,8 +64,9 @@ export const logout = createAsyncThunk(
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: null,
-    isAuthenticated: !!localStorage.getItem('access_token'),
+    user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null,
+    token: localStorage.getItem('token'),
+    isAuthenticated: !!localStorage.getItem('token'),
     loading: false,
     error: null,
   },
@@ -82,6 +85,7 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
         state.isAuthenticated = true;
+        state.token = action.payload.token;
         state.user = action.payload.user;
       })
       .addCase(login.rejected, (state, action) => {
@@ -103,10 +107,12 @@ const authSlice = createSlice({
       // Get Profile
       .addCase(getProfile.fulfilled, (state, action) => {
         state.user = action.payload;
+        localStorage.setItem('user', JSON.stringify(action.payload));
       })
       // Logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
+        state.token = null;
         state.isAuthenticated = false;
       });
   },

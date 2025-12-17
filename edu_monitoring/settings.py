@@ -1,18 +1,23 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-your-secret-key-here-change-in-production'
+# .env faylidan o'qish
+load_dotenv(BASE_DIR / '.env')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Xavfsizlik sozlamalari - .env dan o'qiladi
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key-change-in-production')
 
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
+# ALLOWED_HOSTS - .env dan o'qiladi yoki default
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
-ALLOWED_HOSTS = ['*']
+# Frontend URL (password reset va boshqa linklar uchun)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 
 # Application definition
 
@@ -26,6 +31,7 @@ INSTALLED_APPS = [
 
     # Third party apps
     'rest_framework',
+    'rest_framework.authtoken',  # TOKEN AUTH
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
@@ -42,6 +48,7 @@ INSTALLED_APPS = [
     'ratings',
     'ai_assistant',
     'lesson_analysis',
+    'mock_tests',
 ]
 
 MIDDLEWARE = [
@@ -76,8 +83,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'edu_monitoring.wsgi.application'
 
 # Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -85,22 +90,7 @@ DATABASES = {
     }
 }
 
-# For production, use PostgreSQL:
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'edu_monitoring_db',
-#         'USER': 'postgres',
-#         'PASSWORD': 'your_password',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
-
-
 # Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -120,19 +110,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-# https://docs.djangoproject.com/en/4.2/topics/i18n/
-
 LANGUAGE_CODE = 'uz'
-
 TIME_ZONE = 'Asia/Tashkent'
-
 USE_I18N = True
-
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
+# Static files
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
@@ -144,8 +127,6 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom User Model
@@ -154,6 +135,7 @@ AUTH_USER_MODEL = 'users.User'
 # REST Framework Settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -211,13 +193,14 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# Production uchun CORS_ALLOW_ALL_ORIGINS = False qilish kerak
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+
+# CORS allowed origins - .env dan o'qiladi
+_cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000')
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in _cors_origins.split(',') if origin.strip()]
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -240,18 +223,22 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# Email Settings (Gmail example)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your-email@gmail.com'  # O'zgartiring
-EMAIL_HOST_PASSWORD = 'your-app-password'  # Gmail App Password
-DEFAULT_FROM_EMAIL = 'Ta\'lim Monitoring <your-email@gmail.com>'
-
-# For development (console backend)
+# Email Settings
+# Development uchun console backend (emaillar terminal'ga chiqadi)
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+# Production uchun SMTP sozlamalari
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Edu Monitoring <noreply@edumonitoring.uz>')
+
+# Agar EMAIL_HOST_USER bo'sh bo'lsa, console backend ishlatiladi
+if not EMAIL_HOST_USER:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Cache Settings
 CACHES = {
@@ -264,20 +251,6 @@ CACHES = {
         }
     }
 }
-
-# For production with Redis:
-# CACHES = {
-#     'default': {
-#         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-#         'LOCATION': 'redis://127.0.0.1:6379/1',
-#         'OPTIONS': {
-#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-#         },
-#         'KEY_PREFIX': 'edu_monitoring',
-#         'TIMEOUT': 300,
-#     }
-# }
-
 
 # File Upload Settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
@@ -303,11 +276,10 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
-        # File handler ni olib tashladik
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],  # Faqat console
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
@@ -324,7 +296,7 @@ LOGGING = {
     },
 }
 
-# Security Settings (Production)
+# Security Settings
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -371,3 +343,6 @@ LEVEL_THRESHOLDS = {
     'assistant': 500,
     'expert': 1000,
 }
+
+# Gemini API Key - .env dan o'qiladi
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Container,
-  Typography,
   Box,
   Paper,
   Table,
@@ -12,258 +11,453 @@ import {
   TableRow,
   Avatar,
   Chip,
-  Button,
-  TextField,
-  InputAdornment,
-  CircularProgress,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid,
+  Card,
+  CardContent,
+  LinearProgress,
 } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  EmojiEvents,
-  Download,
-  PictureAsPdf,
-  Search,
+  Trophy,
+  Medal,
+  Award,
   TrendingUp,
-  TrendingDown,
-  Remove,
-} from '@mui/icons-material';
+  Star,
+  Crown,
+  Zap,
+} from 'lucide-react';
+import PageHeader from '../../components/Common/PageHeader';
+import SearchBar from '../../components/Common/SearchBar';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import EmptyState from '../../components/Common/EmptyState';
 import axiosInstance from '../../api/axios';
 import { toast } from 'react-toastify';
+import CountUp from 'react-countup';
 
 const Ratings = () => {
-  const [ratings, setRatings] = useState([]); // har doim array
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [teachers, setTeachers] = useState([]);
+  const [filteredTeachers, setFilteredTeachers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [subjectFilter, setSubjectFilter] = useState('all');
+  const [schoolFilter, setSchoolFilter] = useState('all');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchRatings();
   }, []);
 
+  useEffect(() => {
+    filterTeachers();
+  }, [teachers, searchQuery, subjectFilter, schoolFilter]);
+
   const fetchRatings = async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get('/ratings/');
-
-      // Muhim qator: results ni olish yoki to'g'ridan array
-      const data = response.data.results || response.data || [];
-
-      // Har qanday holatda ham array ekanligiga ishonch hosil qilamiz
-      setRatings(Array.isArray(data) ? data : []);
+      const data = response.data.results || response.data;
+      setTeachers(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Reyting yuklashda xatolik:', error);
-      toast.error('Reytinglarni yuklashda xatolik yuz berdi');
-      setRatings([]); // xatolik bo'lsa ham array qaytaramiz
+      console.error('Reyting xatolik:', error);
+      toast.error('Reytingni yuklashda xatolik');
+      setTeachers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleExportExcel = async () => {
-    try {
-      const response = await axiosInstance.get('/auth/export/ratings/excel/', {
-        responseType: 'blob',
-      });
+  const filterTeachers = () => {
+    let filtered = [...teachers];
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `reyting_${new Date().toISOString().split('T')[0]}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success('Excel fayl yuklab olindi!');
-    } catch (error) {
-      toast.error('Excel yuklab olishda xatolik');
+    // Search filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(
+        (t) =>
+          t.teacher_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.school_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
+
+    // Subject filter
+    if (subjectFilter !== 'all') {
+      filtered = filtered.filter((t) => t.subject === subjectFilter);
+    }
+
+    // School filter
+    if (schoolFilter !== 'all') {
+      filtered = filtered.filter((t) => t.school_id === parseInt(schoolFilter));
+    }
+
+    setFilteredTeachers(filtered);
   };
 
-  const handleExportPDF = async () => {
-    try {
-      const response = await axiosInstance.get('/auth/export/ratings/pdf/', {
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `reyting_${new Date().toISOString().split('T')[0]}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success('PDF fayl yuklab olindi!');
-    } catch (error) {
-      toast.error('PDF yuklab olishda xatolik');
-    }
+  const getRankIcon = (rank) => {
+    if (rank === 1) return <Crown size={24} color="#FFD700" />;
+    if (rank === 2) return <Medal size={24} color="#C0C0C0" />;
+    if (rank === 3) return <Medal size={24} color="#CD7F32" />;
+    return <Trophy size={20} color="#94a3b8" />;
   };
 
   const getRankColor = (rank) => {
-    if (rank === 1) return '#FFD700'; // oltin
-    if (rank === 2) return '#C0C0C0'; // kumush
-    if (rank === 3) return '#CD7F32'; // bronza
-    return 'transparent';
+    if (rank === 1) return '#FFD700';
+    if (rank === 2) return '#C0C0C0';
+    if (rank === 3) return '#CD7F32';
+    return '#64748b';
   };
 
-  const getRankIcon = (change) => {
-    if (change > 0) return <TrendingUp color="success" />;
-    if (change < 0) return <TrendingDown color="error" />;
-    return <Remove color="disabled" />;
+  const getSubjectColor = (subject) => {
+    const colors = {
+      math: '#6366f1',
+      physics: '#ec4899',
+      chemistry: '#10b981',
+      biology: '#f59e0b',
+      informatics: '#3b82f6',
+      default: '#64748b',
+    };
+    return colors[subject] || colors.default;
   };
 
-  // Qidiruv – har doim array ustida ishlaydi
-  const filteredRatings = ratings.filter((rating) => {
-    if (!rating) return false;
-    const searchLower = search.toLowerCase();
-    return (
-      rating.teacher_name?.toLowerCase().includes(searchLower) ||
-      rating.school_name?.toLowerCase().includes(searchLower)
-    );
-  });
+  const subjects = [
+    { value: 'all', label: 'Barcha fanlar' },
+    { value: 'math', label: 'Matematika' },
+    { value: 'physics', label: 'Fizika' },
+    { value: 'chemistry', label: 'Kimyo' },
+    { value: 'biology', label: 'Biologiya' },
+    { value: 'informatics', label: 'Informatika' },
+  ];
+
+  const schools = [
+    { value: 'all', label: 'Barcha maktablar' },
+    { value: '1', label: '1-Maktab' },
+    { value: '2', label: '2-Maktab' },
+  ];
+
+  // Top 3 teachers
+  const topThree = filteredTeachers.slice(0, 3);
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold' }}>
-          <EmojiEvents sx={{ mr: 2, fontSize: 40, color: '#FFD700' }} />
-          O'qituvchilar Reytingi
-        </Typography>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
+        pt: 4,
+        pb: 6,
+      }}
+    >
+      <Container maxWidth="xl">
+        {/* Header */}
+        <PageHeader
+          title="Reyting Jadvali"
+          subtitle="O'qituvchilar reytingi va statistikasi"
+          icon={Trophy}
+        />
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Excel
-          </Button>
-          <Button variant="outlined" startIcon={<PictureAsPdf />} onClick={handleExportPDF} color="error">
-            PDF
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Qidiruv */}
-      <TextField
-        fullWidth
-        placeholder="O'qituvchi yoki maktab bo'yicha qidirish..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <Search />
-            </InputAdornment>
-          ),
-        }}
-        sx={{ mb: 4 }}
-      />
-
-      {/* Jadval */}
-      <TableContainer component={Paper} elevation={true} sx={{ borderRadius: 2 }}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ backgroundColor: 'primary.main' }}>
-              <TableCell align="center" sx={{ color: 'white', fontWeight: 'bold' }}>O'rin</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>O'qituvchi</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Maktab</TableCell>
-              <TableCell align="center" sx={{ color: 'white', fontWeight: 'bold' }}>Umumiy ball</TableCell>
-              <TableCell align="center" sx={{ color: 'white', fontWeight: 'bold' }}>Oylik ball</TableCell>
-              <TableCell align="center" sx={{ color: 'white', fontWeight: 'bold' }}>Daraja</TableCell>
-              <TableCell align="center" sx={{ color: 'white', fontWeight: 'bold' }}>O'zgarish</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
-                  <CircularProgress />
-                  <Typography sx={{ mt: 2 }}>Yuklanmoqda...</Typography>
-                </TableCell>
-              </TableRow>
-            ) : filteredRatings.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                  <Typography variant="h6" color="text.secondary">
-                    Hech narsa topilmadi
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredRatings.map((rating, index) => (
-                <TableRow
-                  key={rating.id || index}
+        {/* Filters */}
+        <Paper
+          sx={{
+            borderRadius: 3,
+            p: 2,
+            mb: 3,
+            bgcolor: 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <SearchBar
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="O'qituvchi yoki maktab nomi..."
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Fan</InputLabel>
+                <Select
+                  value={subjectFilter}
+                  onChange={(e) => setSubjectFilter(e.target.value)}
+                  label="Fan"
                   sx={{
-                    backgroundColor: getRankColor(rating.rank),
-                    '&:hover': { bgcolor: 'action.hover' },
+                    bgcolor: 'white',
+                    borderRadius: 2,
                   }}
                 >
-                  <TableCell align="center">
-                    {rating.rank <= 3 ? (
-                      <EmojiEvents
+                  {subjects.map((sub) => (
+                    <MenuItem key={sub.value} value={sub.value}>
+                      {sub.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Maktab</InputLabel>
+                <Select
+                  value={schoolFilter}
+                  onChange={(e) => setSchoolFilter(e.target.value)}
+                  label="Maktab"
+                  sx={{
+                    bgcolor: 'white',
+                    borderRadius: 2,
+                  }}
+                >
+                  {schools.map((school) => (
+                    <MenuItem key={school.value} value={school.value}>
+                      {school.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {loading ? (
+          <LoadingSpinner message="Reyting yuklanmoqda..." />
+        ) : filteredTeachers.length === 0 ? (
+          <EmptyState
+            icon={Trophy}
+            title="Reyting topilmadi"
+            message="Hozircha reyting ma'lumotlari yo'q"
+          />
+        ) : (
+          <>
+            {/* Top 3 Cards */}
+            {topThree.length > 0 && (
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                {topThree.map((teacher, index) => (
+                  <Grid item xs={12} md={4} key={teacher.teacher_id}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                    >
+                      <Card
                         sx={{
-                          fontSize: 40,
-                          color: getRankColor(rating.rank),
+                          borderRadius: 4,
+                          background: `linear-gradient(135deg, ${getRankColor(index + 1)}20 0%, ${getRankColor(index + 1)}10 100%)`,
+                          border: `2px solid ${getRankColor(index + 1)}40`,
+                          position: 'relative',
+                          overflow: 'visible',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-8px)',
+                            boxShadow: `0 16px 48px ${getRankColor(index + 1)}40`,
+                          },
                         }}
-                      />
-                    ) : (
-                      <Typography variant="h5" fontWeight="bold">
-                        {rating.rank}
-                      </Typography>
-                    )}
-                  </TableCell>
-
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ bgcolor: 'primary.main' }}>
-                        {rating.teacher_name?.charAt(0).toUpperCase() || 'T'}
-                      </Avatar>
-                      <Box>
-                        <Typography fontWeight="medium">{rating.teacher_name}</Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-
-                  <TableCell>{rating.school_name || '-'}</TableCell>
-
-                  <TableCell align="center">
-                    <Typography variant="h6" color="primary" fontWeight="bold">
-                      {rating.total_points || 0}
-                    </Typography>
-                  </TableCell>
-
-                  <TableCell align="center">
-                    <Typography color="text.secondary">
-                      {rating.monthly_points || 0}
-                    </Typography>
-                  </TableCell>
-
-                  <TableCell align="center">
-                    <Chip
-                      label={rating.level || 'Belgilanmagan'}
-                      color={
-                        rating.level === 'expert'
-                          ? 'success'
-                          : rating.level === 'assistant'
-                          ? 'primary'
-                          : 'default'
-                      }
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell align="center">
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                      {getRankIcon(rating.rank_change)}
-                      <Typography
-                        variant="body2"
-                        color={rating.rank_change > 0 ? 'success.main' : rating.rank_change < 0 ? 'error.main' : 'text.secondary'}
                       >
-                        {rating.rank_change > 0 ? `+${rating.rank_change}` : rating.rank_change || '—'}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
+                        {/* Rank Badge */}
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: -16,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: 56,
+                            height: 56,
+                            borderRadius: '50%',
+                            bgcolor: getRankColor(index + 1),
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: `0 4px 20px ${getRankColor(index + 1)}60`,
+                          }}
+                        >
+                          {getRankIcon(index + 1)}
+                        </Box>
+
+                        <CardContent sx={{ textAlign: 'center', pt: 5 }}>
+                          <Avatar
+                            sx={{
+                              width: 80,
+                              height: 80,
+                              mx: 'auto',
+                              mb: 2,
+                              bgcolor: getRankColor(index + 1),
+                              fontSize: '2rem',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {teacher.teacher_name?.charAt(0) || 'T'}
+                          </Avatar>
+
+                          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+                            {teacher.teacher_name}
+                          </Typography>
+
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            {teacher.school_name}
+                          </Typography>
+
+                          <Chip
+                            label={teacher.subject_display || teacher.subject}
+                            size="small"
+                            sx={{
+                              bgcolor: `${getSubjectColor(teacher.subject)}20`,
+                              color: getSubjectColor(teacher.subject),
+                              fontWeight: 700,
+                              mb: 2,
+                            }}
+                          />
+
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 1,
+                              mb: 2,
+                            }}
+                          >
+                            <Star size={24} color={getRankColor(index + 1)} fill={getRankColor(index + 1)} />
+                            <Typography variant="h4" sx={{ fontWeight: 800, color: getRankColor(index + 1) }}>
+                              <CountUp end={teacher.total_points || 0} duration={2} />
+                            </Typography>
+                          </Box>
+
+                          <Grid container spacing={2}>
+                            <Grid item xs={6}>
+                              <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                                  {teacher.total_materials || 0}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Materiallar
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid item xs={6}>
+                              <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                                  {teacher.total_videos || 0}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Videolar
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          </Grid>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Grid>
+                ))}
+              </Grid>
             )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Container>
+
+            {/* Table */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <TableContainer
+                component={Paper}
+                sx={{
+                  borderRadius: 4,
+                  bgcolor: 'rgba(255,255,255,0.95)',
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                }}
+              >
+                <Table>
+                  <TableHead>
+                    <TableRow
+                      sx={{
+                        bgcolor: 'grey.50',
+                      }}
+                    >
+                      <TableCell sx={{ fontWeight: 700 }}>O'rin</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>O'qituvchi</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Maktab</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Fan</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Materiallar</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Videolar</TableCell>
+                      <TableCell sx={{ fontWeight: 700, textAlign: 'right' }}>Ball</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <AnimatePresence>
+                      {filteredTeachers.map((teacher, index) => (
+                        <motion.tr
+                          key={teacher.teacher_id}
+                          component={TableRow}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          sx={{
+                            '&:hover': {
+                              bgcolor: 'grey.50',
+                            },
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {getRankIcon(index + 1)}
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: getRankColor(index + 1) }}>
+                                {index + 1}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Avatar
+                                sx={{
+                                  bgcolor: getSubjectColor(teacher.subject),
+                                  width: 40,
+                                  height: 40,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {teacher.teacher_name?.charAt(0) || 'T'}
+                              </Avatar>
+                              <Typography sx={{ fontWeight: 600 }}>{teacher.teacher_name}</Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>{teacher.school_name}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={teacher.subject_display || teacher.subject}
+                              size="small"
+                              sx={{
+                                bgcolor: `${getSubjectColor(teacher.subject)}20`,
+                                color: getSubjectColor(teacher.subject),
+                                fontWeight: 600,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={teacher.total_materials || 0} size="small" color="primary" />
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={teacher.total_videos || 0} size="small" color="error" />
+                          </TableCell>
+                          <TableCell sx={{ textAlign: 'right' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+                              <Zap size={20} color="#f59e0b" fill="#f59e0b" />
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>
+                                {teacher.total_points || 0}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </motion.div>
+          </>
+        )}
+      </Container>
+    </Box>
   );
 };
 

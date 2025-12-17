@@ -12,11 +12,20 @@ class Consultation(models.Model):
         ('completed', 'Yakunlandi'),
     ]
 
+    TYPE_CHOICES = [
+        ('online', 'Online'),
+        ('offline', 'Offline'),
+    ]
+
     title = models.CharField(max_length=200, verbose_name='Mavzu')
-    description = models.TextField(verbose_name='Tavsif')
+    description = models.TextField(blank=True, verbose_name='Tavsif')
     teacher = models.ForeignKey('teachers.Teacher', on_delete=models.CASCADE, related_name='consultations_as_mentor')
     student = models.ForeignKey('teachers.Teacher', on_delete=models.CASCADE, related_name='consultations_as_student')
     scheduled_at = models.DateTimeField(verbose_name='Rejalashtirilgan vaqt')
+    duration = models.PositiveIntegerField(default=60, verbose_name='Davomiyligi (daqiqa)')
+    consultation_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='online', verbose_name='Turi')
+    location = models.CharField(max_length=200, blank=True, verbose_name='Manzil')
+    meeting_url = models.URLField(blank=True, verbose_name='Uchrashuv havolasi')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Holat')
     notes = models.TextField(blank=True, verbose_name='Eslatmalar')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Yaratilgan')

@@ -1,309 +1,307 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useState } from 'react';
 import {
   Container,
+  Grid,
   Typography,
   Box,
-  Grid,
-  Card,
-  CardContent,
   Paper,
   LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
+  Avatar,
   Chip,
-  Button,
 } from '@mui/material';
+import { motion } from 'framer-motion';
 import {
-  Star,
   TrendingUp,
-  Description,
-  VideoLibrary,
-  EmojiEvents,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { fetchDashboardStats } from '../../redux/slices/dashboardSlice';
-import { fetchTeacherProfile, fetchMyActivities } from '../../redux/slices/teacherSlice';
-
-const StatCard = ({ title, value, icon, color }) => (
-  <Card sx={{ height: '100%' }}>
-    <CardContent>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box>
-          <Typography color="textSecondary" variant="caption" gutterBottom>
-            {title}
-          </Typography>
-          <Typography variant="h4" sx={{ my: 1, color, fontWeight: 'bold' }}>
-            {value}
-          </Typography>
-        </Box>
-        <Box sx={{ color, opacity: 0.3 }}>
-          {icon}
-        </Box>
-      </Box>
-    </CardContent>
-  </Card>
-);
+  BookOpen,
+  Video,
+  Award,
+  Star,
+  CheckCircle,
+  FileText,
+} from 'lucide-react';
+import StatCard from '../../components/Common/StatCard';
+import axiosInstance from '../../api/axios';
+import { toast } from 'react-toastify';
+import { useSelector } from 'react-redux';
 
 const TeacherDashboard = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { stats, loading } = useSelector((state) => state.dashboard);
-  const { profile, activities } = useSelector((state) => state.teacher);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [mockTestsCount, setMockTestsCount] = useState(0);
+  const user = useSelector((state) => state.auth.user);
 
   useEffect(() => {
-    dispatch(fetchDashboardStats());
-    dispatch(fetchTeacherProfile());
-    dispatch(fetchMyActivities());
-  }, [dispatch]);
+    fetchDashboard();
+  }, []);
 
-  const getProgressToNextLevel = () => {
-    if (!stats) return 0;
-    const points = stats.total_points;
-    if (points >= 1000) return 100;
-    if (points >= 500) return ((points - 500) / 500) * 100;
-    return (points / 500) * 100;
+  const fetchDashboard = async () => {
+    try {
+      const response = await axiosInstance.get('/auth/dashboard/');
+      setStats(response.data);
+
+      // Mock Tests statsini olish
+      try {
+        const testsResponse = await axiosInstance.get('/mock-tests/my-attempts/');
+        setMockTestsCount(testsResponse.data.length);
+      } catch (error) {
+        console.log('Mock tests yuklanmadi:', error);
+      }
+    } catch (error) {
+      console.error('Dashboard xatolik:', error);
+      toast.error('Statistikani yuklashda xatolik');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getNextLevelText = () => {
-    if (!stats) return '';
-    const points = stats.total_points;
-    if (points >= 1000) return 'Eng yuqori daraja!';
-    if (points >= 500) return `Expert darajasigacha: ${1000 - points} ball`;
-    return `Assistant darajasigacha: ${500 - points} ball`;
-  };
-
-  const getLevelBadge = (level) => {
-    const levelMap = {
-      teacher: { label: 'O\'qituvchi', color: 'default' },
-      assistant: { label: 'Assistant', color: 'primary' },
-      expert: { label: 'Expert', color: 'success' },
-    };
-    const { label, color } = levelMap[level] || levelMap.teacher;
-    return <Chip label={label} color={color} size="small" />;
-  };
-
-  if (loading || !stats) {
+  if (loading) {
     return (
-      <Container maxWidth="lg">
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-          <Typography variant="h6" color="textSecondary">
-            Yuklanmoqda...
-          </Typography>
-        </Box>
-      </Container>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LinearProgress sx={{ width: 300 }} />
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg">
-      {/* Welcome Section */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-          Xush kelibsiz! 👋
-        </Typography>
-        <Typography variant="body1" color="textSecondary">
-          Bu yerda sizning faoliyatingiz va yutuqlaringizni kuzatishingiz mumkin
-        </Typography>
-      </Box>
-
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Jami ball"
-            value={stats.total_points}
-            icon={<Star sx={{ fontSize: 50 }} />}
-            color="#FFD700"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Oylik ball"
-            value={stats.monthly_points}
-            icon={<TrendingUp sx={{ fontSize: 50 }} />}
-            color="#1976d2"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Materiallar"
-            value={stats.total_materials}
-            icon={<Description sx={{ fontSize: 50 }} />}
-            color="#4caf50"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Videolar"
-            value={stats.total_videos}
-            icon={<VideoLibrary sx={{ fontSize: 50 }} />}
-            color="#ff9800"
-          />
-        </Grid>
-      </Grid>
-
-      <Grid container spacing={3}>
-        {/* Left Column */}
-        <Grid item xs={12} md={8}>
-          {/* Level Progress */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Daraja o'sishi
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <EmojiEvents sx={{ color: '#FFD700' }} />
-                {getLevelBadge(stats.level)}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        pt: 4,
+        pb: 6,
+      }}
+    >
+      <Container maxWidth="xl">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Avatar
+                sx={{
+                  width: 72,
+                  height: 72,
+                  bgcolor: 'white',
+                  color: 'primary.main',
+                  fontSize: '2rem',
+                  fontWeight: 700,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                }}
+              >
+                {user?.first_name?.charAt(0) || 'T'}
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    color: 'white',
+                    fontWeight: 800,
+                    textShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  Xush kelibsiz, {user?.first_name}! 👋
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                  <Chip
+                    label="O'QITUVCHI"
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.3)',
+                      color: 'white',
+                      fontWeight: 700,
+                      backdropFilter: 'blur(10px)',
+                    }}
+                  />
+                </Box>
               </Box>
             </Box>
+          </Box>
+        </motion.div>
 
-            <Box sx={{ mt: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2">
-                  Joriy daraja: <strong>{stats.level}</strong>
+        {/* Stats Grid */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={6} lg={3}>
+            <StatCard
+              title="Umumiy Ball"
+              value={stats?.total_points || 0}
+              icon={<TrendingUp />}
+              color="#6366f1"
+              trend={12}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={6} lg={3}>
+            <StatCard
+              title="Materiallar"
+              value={stats?.total_materials || 0}
+              icon={<BookOpen />}
+              color="#ec4899"
+              trend={8}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={6} lg={3}>
+            <StatCard
+              title="Videolar"
+              value={stats?.total_videos || 0}
+              icon={<Video />}
+              color="#10b981"
+              trend={-3}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={6} lg={3}>
+            <StatCard
+              title="Mock Testlar"
+              value={mockTestsCount}
+              icon={<FileText />}
+              color="#f59e0b"
+            />
+          </Grid>
+        </Grid>
+
+        {/* Level Progress */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <Paper
+            sx={{
+              p: 4,
+              borderRadius: 4,
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(20px)',
+              mb: 4,
+              border: '1px solid rgba(255,255,255,0.3)',
+              boxShadow: '0 12px 48px rgba(0,0,0,0.15)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <Avatar
+                sx={{
+                  width: 56,
+                  height: 56,
+                  bgcolor: 'warning.main',
+                  mr: 2,
+                  boxShadow: '0 4px 20px rgba(245,158,11,0.4)',
+                }}
+              >
+                <Star size={32} />
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Daraja: {stats?.level || 'Teacher'} 🎯
                 </Typography>
-                <Typography variant="body2" color="primary" fontWeight="bold">
-                  {stats.total_points} ball
+                <Typography variant="body2" color="text.secondary">
+                  Keyingi darajagacha: <strong>{stats?.points_to_next_level || 500} ball</strong>
                 </Typography>
               </Box>
-              <LinearProgress
-                variant="determinate"
-                value={getProgressToNextLevel()}
+              <Chip
+                label={`${stats?.level_progress || 0}%`}
                 sx={{
-                  height: 12,
-                  borderRadius: 5,
-                  '& .MuiLinearProgress-bar': {
-                    borderRadius: 5,
-                  }
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  height: 40,
                 }}
               />
-              <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
-                {getNextLevelText()}
-              </Typography>
             </Box>
-          </Paper>
 
-          {/* Approved Materials */}
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Tasdiqlangan kontentlar
-            </Typography>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={6}>
-                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'success.light', borderRadius: 2 }}>
-                  <Typography variant="h4" color="success.dark" fontWeight="bold">
-                    {stats.approved_materials}
-                  </Typography>
-                  <Typography variant="body2" color="success.dark">
-                    Materiallar
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    / {stats.total_materials} jami
+            <LinearProgress
+              variant="determinate"
+              value={stats?.level_progress || 0}
+              sx={{
+                height: 12,
+                borderRadius: 6,
+                bgcolor: 'grey.200',
+                '& .MuiLinearProgress-bar': {
+                  background: 'linear-gradient(90deg, #6366f1 0%, #ec4899 100%)',
+                  borderRadius: 6,
+                  boxShadow: '0 2px 8px rgba(99,102,241,0.4)',
+                },
+              }}
+            />
+          </Paper>
+        </motion.div>
+
+        {/* Bottom Stats */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <Paper
+                sx={{
+                  p: 3,
+                  borderRadius: 4,
+                  background: 'rgba(255,255,255,0.95)',
+                  backdropFilter: 'blur(20px)',
+                  height: '100%',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <CheckCircle size={24} color="#10b981" />
+                  <Typography variant="h6" sx={{ ml: 1, fontWeight: 700 }}>
+                    So'nggi Faoliyatlar
                   </Typography>
                 </Box>
-              </Grid>
-              <Grid item xs={6}>
-                <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'warning.light', borderRadius: 2 }}>
-                  <Typography variant="h4" color="warning.dark" fontWeight="bold">
-                    {stats.approved_videos}
-                  </Typography>
-                  <Typography variant="body2" color="warning.dark">
-                    Videolar
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    / {stats.total_videos} jami
+                <Typography variant="body2" color="text.secondary">
+                  Tez orada bu yerda sizning faoliyatlaringiz ko'rsatiladi
+                </Typography>
+              </Paper>
+            </motion.div>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
+              <Paper
+                sx={{
+                  p: 3,
+                  borderRadius: 4,
+                  background: 'rgba(255,255,255,0.95)',
+                  backdropFilter: 'blur(20px)',
+                  height: '100%',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <Star size={24} color="#f59e0b" />
+                  <Typography variant="h6" sx={{ ml: 1, fontWeight: 700 }}>
+                    Yutuqlar
                   </Typography>
                 </Box>
-              </Grid>
-            </Grid>
-
-            {/* Quick Actions */}
-            <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={() => navigate('/materials')}
-              >
-                Material yuklash
-              </Button>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={() => navigate('/videos')}
-              >
-                Video yuklash
-              </Button>
-            </Box>
-          </Paper>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Box sx={{ textAlign: 'center', p: 2, borderRadius: 2, bgcolor: 'success.light' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.dark' }}>
+                        {stats?.total_materials || 0}
+                      </Typography>
+                      <Typography variant="caption">Materiallar</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Box sx={{ textAlign: 'center', p: 2, borderRadius: 2, bgcolor: 'info.light' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700, color: 'info.dark' }}>
+                        {stats?.total_videos || 0}
+                      </Typography>
+                      <Typography variant="caption">Videolar</Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
+            </motion.div>
+          </Grid>
         </Grid>
-
-        {/* Right Column - Recent Activities */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2, height: '100%' }}>
-            <Typography variant="h6" gutterBottom>
-              So'nggi faoliyatlar
-            </Typography>
-
-            {activities && activities.length > 0 ? (
-              <List dense>
-                {activities.slice(0, 8).map((activity) => (
-                  <ListItem
-                    key={activity.id}
-                    divider
-                    sx={{
-                      borderRadius: 1,
-                      mb: 1,
-                      '&:hover': { bgcolor: 'action.hover' }
-                    }}
-                  >
-                    <ListItemText
-                      primary={activity.title}
-                      secondary={new Date(activity.date).toLocaleDateString('uz-UZ', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                      primaryTypographyProps={{
-                        variant: 'body2',
-                        fontWeight: 500
-                      }}
-                    />
-                    <Chip
-                      label={`+${activity.points}`}
-                      size="small"
-                      color="primary"
-                      sx={{ fontWeight: 'bold' }}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 5 }}>
-                <Typography variant="body2" color="textSecondary">
-                  Faoliyat topilmadi
-                </Typography>
-                <Typography variant="caption" color="textSecondary">
-                  Material yoki video yuklashdan boshlang!
-                </Typography>
-              </Box>
-            )}
-
-            {activities && activities.length > 8 && (
-              <Button
-                size="small"
-                fullWidth
-                sx={{ mt: 2 }}
-              >
-                Barchasini ko'rish
-              </Button>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

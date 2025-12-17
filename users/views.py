@@ -2,10 +2,12 @@ from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, get_user_model
 from django.db import models
 from django.http import HttpResponse
+from django.core.mail import send_mail
+from django.conf import settings
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from reportlab.lib.pagesizes import A4
@@ -22,7 +24,10 @@ from .serializers import (
     RegisterSerializer,
     LoginSerializer,
     ChangePasswordSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer,
 )
+from .models import PasswordResetToken
 
 User = get_user_model()
 
@@ -59,11 +64,11 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        refresh = RefreshToken.for_user(user)
+        # Token yaratish
+        token, created = Token.objects.get_or_create(user=user)
 
         return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
+            'token': token.key,
             'user': UserSerializer(user).data
         })
 
@@ -74,9 +79,8 @@ class LogoutView(APIView):
 
     def post(self, request):
         try:
-            refresh_token = request.data.get("refresh")
-            token = RefreshToken(refresh_token)
-            token.blacklist()
+            # Token o'chirish
+            request.user.auth_token.delete()
             return Response({'message': 'Muvaffaqiyatli chiqildi'})
         except Exception:
             return Response(
@@ -116,6 +120,111 @@ class ChangePasswordView(APIView):
         user.save()
 
         return Response({'message': 'Parol muvaffaqiyatli o\'zgartirildi'})
+
+
+class PasswordResetRequestView(APIView):
+    """Parol tiklash so'rovi - email yuboradi"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        # Birinchi topilgan foydalanuvchini olish (bir nechta bo'lishi mumkin)
+        user = User.objects.filter(email=email).first()
+
+        # Eski tokenlarni bekor qilish
+        PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
+
+        # Yangi token yaratish
+        reset_token = PasswordResetToken.objects.create(user=user)
+
+        # Email yuborish - Frontend URL settings dan olinadi
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        reset_url = f"{frontend_url}/reset-password/{reset_token.token}"
+
+        try:
+            send_mail(
+                subject='Parolni tiklash - Edu Monitoring',
+                message=f'''Assalomu alaykum, {user.first_name or user.username}!
+
+Siz parolni tiklash so'rovini yubordingiz.
+
+Parolni tiklash uchun quyidagi havolaga o'ting:
+{reset_url}
+
+Bu havola 24 soat davomida amal qiladi.
+
+Agar siz bu so'rovni yubormasangiz, bu xabarni e'tiborsiz qoldiring.
+
+Hurmat bilan,
+Edu Monitoring tizimi
+''',
+                from_email=settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@edumonitoring.uz',
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            # Console backend ishlatilganda xato bermaydi
+            print(f"Email yuborildi (console): {reset_url}")
+
+        return Response({
+            'message': 'Parol tiklash havolasi emailingizga yuborildi',
+            'token': str(reset_token.token)  # Development uchun - production da olib tashlash kerak
+        })
+
+
+class PasswordResetConfirmView(APIView):
+    """Parol tiklashni tasdiqlash"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        token_uuid = serializer.validated_data['token']
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            reset_token = PasswordResetToken.objects.get(token=token_uuid)
+        except PasswordResetToken.DoesNotExist:
+            return Response(
+                {'error': 'Noto\'g\'ri yoki muddati o\'tgan token'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not reset_token.is_valid():
+            return Response(
+                {'error': 'Token muddati tugagan yoki allaqachon ishlatilgan'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Parolni yangilash
+        user = reset_token.user
+        user.set_password(new_password)
+        user.save()
+
+        # Tokenni ishlatilgan deb belgilash
+        reset_token.is_used = True
+        reset_token.save()
+
+        return Response({'message': 'Parol muvaffaqiyatli yangilandi'})
+
+
+class PasswordResetValidateTokenView(APIView):
+    """Token yaroqliligini tekshirish"""
+    permission_classes = [AllowAny]
+
+    def get(self, request, token):
+        try:
+            reset_token = PasswordResetToken.objects.get(token=token)
+            if reset_token.is_valid():
+                return Response({'valid': True, 'email': reset_token.user.email})
+            else:
+                return Response({'valid': False, 'error': 'Token muddati tugagan'})
+        except PasswordResetToken.DoesNotExist:
+            return Response({'valid': False, 'error': 'Token topilmadi'})
 
 
 class UserListView(generics.ListCreateAPIView):

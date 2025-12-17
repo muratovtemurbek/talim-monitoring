@@ -29,23 +29,38 @@ class VideoViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
         """Video yaratish"""
-        teacher = Teacher.objects.get(user=self.request.user)
+        try:
+            teacher = Teacher.objects.get(user=request.user)
+        except Teacher.DoesNotExist:
+            return Response(
+                {"error": "O'qituvchi profili topilmadi. Admin bilan bog'laning."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         serializer.save(teacher=teacher)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'])
     def my_videos(self, request):
         """Mening videolarim"""
-        teacher = Teacher.objects.get(user=request.user)
-        videos = Video.objects.filter(teacher=teacher)
-        serializer = self.get_serializer(videos, many=True)
-        return Response(serializer.data)
+        try:
+            teacher = Teacher.objects.get(user=request.user)
+            videos = Video.objects.filter(teacher=teacher)
+            serializer = self.get_serializer(videos, many=True)
+            return Response(serializer.data)
+        except Teacher.DoesNotExist:
+            return Response([], status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         """Video tasdiqlash (Admin)"""
-        if request.user.role != 'admin':
+        if request.user.role not in ['admin', 'superadmin']:
             return Response(
                 {'error': 'Faqat admin tasdiqlashi mumkin'},
                 status=status.HTTP_403_FORBIDDEN

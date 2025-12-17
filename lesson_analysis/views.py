@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -43,35 +43,47 @@ class LessonAnalysisViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Tahlil yaratish"""
-        teacher = Teacher.objects.get(user=self.request.user)
-        serializer.save(analyzer=teacher, status='draft')
+        try:
+            teacher = Teacher.objects.get(user=self.request.user)
+            serializer.save(analyzer=teacher, status='draft')
+        except Teacher.DoesNotExist:
+            raise serializers.ValidationError("O'qituvchi profili topilmadi")
 
     @action(detail=False, methods=['get'])
     def my_analyses_given(self, request):
         """Men bergan tahlillar"""
-        teacher = Teacher.objects.get(user=request.user)
-        analyses = LessonAnalysis.objects.filter(analyzer=teacher)
-        serializer = self.get_serializer(analyses, many=True)
-        return Response(serializer.data)
+        try:
+            teacher = Teacher.objects.get(user=request.user)
+            analyses = LessonAnalysis.objects.filter(analyzer=teacher)
+            serializer = self.get_serializer(analyses, many=True)
+            return Response(serializer.data)
+        except Teacher.DoesNotExist:
+            return Response([])
 
     @action(detail=False, methods=['get'])
     def my_analyses_received(self, request):
         """Menga berilgan tahlillar"""
-        teacher = Teacher.objects.get(user=request.user)
-        analyses = LessonAnalysis.objects.filter(teacher=teacher)
-        serializer = self.get_serializer(analyses, many=True)
-        return Response(serializer.data)
+        try:
+            teacher = Teacher.objects.get(user=request.user)
+            analyses = LessonAnalysis.objects.filter(teacher=teacher)
+            serializer = self.get_serializer(analyses, many=True)
+            return Response(serializer.data)
+        except Teacher.DoesNotExist:
+            return Response([])
 
     @action(detail=False, methods=['get'])
     def pending(self, request):
         """Tasdiqlash kutilayotgan tahlillar"""
-        teacher = Teacher.objects.get(user=request.user)
-        analyses = LessonAnalysis.objects.filter(
-            teacher=teacher,
-            status='pending'
-        )
-        serializer = self.get_serializer(analyses, many=True)
-        return Response(serializer.data)
+        try:
+            teacher = Teacher.objects.get(user=request.user)
+            analyses = LessonAnalysis.objects.filter(
+                teacher=teacher,
+                status='pending'
+            )
+            serializer = self.get_serializer(analyses, many=True)
+            return Response(serializer.data)
+        except Teacher.DoesNotExist:
+            return Response([])
 
     @action(detail=True, methods=['post'])
     def submit(self, request, pk=None):

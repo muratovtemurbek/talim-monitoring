@@ -7,8 +7,10 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import store from './redux/store';
 import { CustomThemeProvider } from './contexts/ThemeContext';
-import Login from './components/Auth/Login';
-import Register from './components/Auth/Register';
+import Login from './pages/Auth/Login';
+import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 import MainLayout from './components/Layout/MainLayout';
 
 // Pages
@@ -26,7 +28,11 @@ import Schools from './pages/Schools/Schools';
 import Users from './pages/Users/Users';
 import Statistics from './pages/Statistics/Statistics';
 import AIAssistant from './pages/AIAssistant/AIAssistant';
-import LessonAnalysis from './pages/LessonAnalysis/LessonAnalysis'; // YANGI
+import LessonAnalysis from './pages/LessonAnalysis/LessonAnalysis';
+import MockTests from './pages/MockTests/MockTests';
+import TakeTest from './pages/MockTests/TakeTest';
+import TestResult from './pages/MockTests/TestResult';
+import MockTestManager from './pages/Admin/MockTestManager';
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -101,6 +107,8 @@ function App() {
                 </PublicRoute>
               }
             />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
 
             {/* Protected Routes */}
             <Route
@@ -117,7 +125,11 @@ function App() {
               <Route path="consultations" element={<Consultations />} />
               <Route path="library" element={<Library />} />
               <Route path="ratings" element={<Ratings />} />
-              <Route path="lesson-analysis" element={<LessonAnalysis />} /> {/* YANGI */}
+              <Route path="mock-tests" element={<MockTests />} />
+              <Route path="mock-tests/:testId/take" element={<TakeTest />} />
+              <Route path="mock-tests/result/:attemptId" element={<TestResult />} />
+              <Route path="mock-tests/manage" element={<MockTestManager />} />
+              <Route path="lesson-analysis" element={<LessonAnalysis />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
               <Route path="ai-assistant" element={<AIAssistant />} />

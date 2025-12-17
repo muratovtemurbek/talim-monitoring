@@ -87,7 +87,7 @@ const Login = () => {
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <School sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
             <Typography variant="h4" gutterBottom>
-              Ta'lim Monitoring
+              EMS
             </Typography>
             <Typography variant="body2" color="textSecondary">
               Tizimga kirish

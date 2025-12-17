@@ -5,6 +5,9 @@ from .views import (
     LogoutView,
     UserProfileView,
     ChangePasswordView,
+    PasswordResetRequestView,
+    PasswordResetConfirmView,
+    PasswordResetValidateTokenView,
     UserListView,
     UserDetailView,
     DashboardStatsView,
@@ -26,6 +29,12 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('profile/', UserProfileView.as_view(), name='profile'),
     path('change-password/', ChangePasswordView.as_view(), name='change-password'),
+
+    # Parol tiklash
+    path('password-reset/', PasswordResetRequestView.as_view(), name='password-reset-request'),
+    path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
+    path('password-reset/validate/<uuid:token>/', PasswordResetValidateTokenView.as_view(), name='password-reset-validate'),
+
     path('users/', UserListView.as_view(), name='user-list'),
     path('users/<int:pk>/', UserDetailView.as_view(), name='user-detail'),
 

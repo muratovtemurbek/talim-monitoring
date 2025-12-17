@@ -23,6 +23,7 @@ urlpatterns = [
     path('api/ratings/', include('ratings.urls')),
     path('api/ai/', include('ai_assistant.urls')),
     path('api/lesson-analysis/', include('lesson_analysis.urls')),
+    path('api/', include('mock_tests.urls')),
 ]
 
 # Media va Static files

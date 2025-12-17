@@ -1,315 +1,310 @@
 import React, { useState, useEffect } from 'react';
 import {
   Container,
-  Typography,
-  Box,
   Grid,
-  Card,
-  CardContent,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Chip,
-  IconButton,
+  Box,
   Tabs,
   Tab,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Chip,
+  Fab,
+  Pagination,
 } from '@mui/material';
-import {
-  Add,
-  Close,
-  CheckCircle,
-  Cancel,
-  HourglassEmpty,
-  Event,
-  Person,
-} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, MessageCircle } from 'lucide-react';
+import ConsultationCard from '../../components/Consultations/ConsultationCard';
+import ConsultationCreateModal from '../../components/Consultations/ConsultationCreateModal';
+import PageHeader from '../../components/Common/PageHeader';
+import SearchBar from '../../components/Common/SearchBar';
+import LoadingSpinner from '../../components/Common/LoadingSpinner';
+import EmptyState from '../../components/Common/EmptyState';
 import axiosInstance from '../../api/axios';
 import { toast } from 'react-toastify';
+import { useSelector } from 'react-redux';
 
 const Consultations = () => {
   const [consultations, setConsultations] = useState([]);
-  const [teachers, setTeachers] = useState([]); // har doim array
+  const [filteredConsultations, setFilteredConsultations] = useState([]);
   const [tabValue, setTabValue] = useState(0);
-  const [requestOpen, setRequestOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const itemsPerPage = 9;
 
-  const [requestData, setRequestData] = useState({
-    title: '',
-    description: '',
-    teacher: '',
-    scheduled_at: '',
-  });
+  const user = useSelector((state) => state.auth.user);
+  const isTeacher = user?.role === 'teacher';
 
   useEffect(() => {
     fetchConsultations();
-    fetchTeachers();
-  }, [tabValue]);
+  }, []);
+
+  useEffect(() => {
+    filterConsultations();
+  }, [consultations, searchQuery, tabValue]);
 
   const fetchConsultations = async () => {
+    setLoading(true);
     try {
-      const response = await axiosInstance.get('/consultations/my_consultations/');
-      const data = response.data.results || response.data || [];
+      const response = await axiosInstance.get('/consultations/');
+      const data = response.data.results || response.data;
       setConsultations(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Maslahatlar yuklanmadi:', error);
+      console.error('Maslahatlar xatolik:', error);
       toast.error('Maslahatlarni yuklashda xatolik');
       setConsultations([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchTeachers = async () => {
-    try {
-      const response = await axiosInstance.get('/teachers/teachers/');
-      const data = response.data.results || response.data || [];
-      setTeachers(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('O‘qituvchilar yuklanmadi:', error);
-      toast.error('O‘qituvchilarni yuklashda xatolik');
-      setTeachers([]);
+  const filterConsultations = () => {
+    let filtered = [...consultations];
+
+    // Tab filter
+    if (tabValue === 1) {
+      filtered = filtered.filter((c) => c.status === 'pending');
+    } else if (tabValue === 2) {
+      filtered = filtered.filter((c) => c.status === 'accepted');
+    } else if (tabValue === 3) {
+      filtered = filtered.filter((c) => c.status === 'completed');
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(
+        (c) =>
+          c.topic?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          c.teacher_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          c.student_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredConsultations(filtered);
+    setPage(1);
+  };
+
+  const handleAccept = async (consultation) => {
+    if (window.confirm("Maslahatni qabul qilasizmi?")) {
+      try {
+        await axiosInstance.post(`/consultations/${consultation.id}/accept/`);
+        toast.success('Maslahat qabul qilindi!');
+        fetchConsultations();
+      } catch (error) {
+        toast.error('Xatolik yuz berdi');
+      }
     }
   };
 
-  const handleInputChange = (e) => {
-    setRequestData({
-      ...requestData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleRequest = async () => {
-    if (!requestData.title || !requestData.teacher || !requestData.scheduled_at) {
-      toast.error('Barcha majburiy maydonlarni to‘ldiring!');
-      return;
-    }
-
-    try {
-      await axiosInstance.post('/consultations/', requestData);
-      toast.success('So‘rov muvaffaqiyatli yuborildi!');
-      setRequestOpen(false);
-      setRequestData({ title: '', description: '', teacher: '', scheduled_at: '' });
-      fetchConsultations();
-    } catch (error) {
-      console.error('So‘rov yuborishda xatolik:', error);
-      toast.error(error.response?.data?.detail || 'Xatolik yuz berdi');
+  const handleReject = async (consultation) => {
+    if (window.confirm("Maslahatni rad etasizmi?")) {
+      try {
+        await axiosInstance.post(`/consultations/${consultation.id}/reject/`);
+        toast.success('Maslahat rad etildi');
+        fetchConsultations();
+      } catch (error) {
+        toast.error('Xatolik yuz berdi');
+      }
     }
   };
 
-  const handleAccept = async (id) => {
-    try {
-      await axiosInstance.post(`/consultations/${id}/accept/`);
-      toast.success('Maslahat qabul qilindi!');
-      fetchConsultations();
-    } catch (error) {
-      toast.error('Qabul qilishda xatolik');
+  const handleJoin = (consultation) => {
+    if (consultation.meeting_url) {
+      window.open(consultation.meeting_url, '_blank');
+    } else {
+      toast.info('Uchrashuv havolasi hali mavjud emas');
     }
   };
 
-  const handleReject = async (id) => {
-    try {
-      await axiosInstance.post(`/consultations/${id}/reject/`);
-      toast.success('Maslahat rad etildi');
-      fetchConsultations();
-    } catch (error) {
-      toast.error('Rad etishda xatolik');
-    }
+  const handleCreateConsultation = () => {
+    setCreateModalOpen(true);
   };
 
-  const handleComplete = async (id) => {
-    try {
-      await axiosInstance.post(`/consultations/${id}/complete/`);
-      toast.success('Maslahat yakunlandi!');
-      fetchConsultations();
-    } catch (error) {
-      toast.error('Yakunlashda xatolik');
-    }
+  const handleCreateSuccess = () => {
+    fetchConsultations();
   };
 
-  const getStatusChip = (status) => {
-    const map = {
-      pending: { label: 'Kutilmoqda', color: 'warning', icon: <HourglassEmpty /> },
-      accepted: { label: 'Qabul qilindi', color: 'success', icon: <CheckCircle /> },
-      rejected: { label: 'Rad etildi', color: 'error', icon: <Cancel /> },
-      completed: { label: 'Yakunlandi', color: 'primary', icon: <CheckCircle /> },
-    };
-    const config = map[status] || map.pending;
-    return <Chip label={config.label} color={config.color} icon={config.icon} size="small" />;
+  // Pagination
+  const totalPages = Math.ceil(filteredConsultations.length / itemsPerPage);
+  const paginatedConsultations = filteredConsultations.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
+  const getTabLabel = (index) => {
+    const labels = ['Barchasi', 'Kutilmoqda', 'Qabul qilingan', 'Tugallangan'];
+    const counts = [
+      consultations.length,
+      consultations.filter((c) => c.status === 'pending').length,
+      consultations.filter((c) => c.status === 'accepted').length,
+      consultations.filter((c) => c.status === 'completed').length,
+    ];
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {labels[index]}
+        <Chip
+          label={counts[index]}
+          size="small"
+          sx={{
+            bgcolor: tabValue === index ? 'info.main' : 'grey.300',
+            color: tabValue === index ? 'white' : 'text.secondary',
+            fontWeight: 700,
+          }}
+        />
+      </Box>
+    );
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center' }}>
-          <Event sx={{ mr: 2 }} />
-          Maslahatlar
-        </Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => setRequestOpen(true)}>
-          Maslahat so'rash
-        </Button>
-      </Box>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+        pt: 4,
+        pb: 6,
+      }}
+    >
+      <Container maxWidth="xl">
+        {/* Header */}
+        <PageHeader
+          title="Maslahatlar"
+          subtitle="Individual maslahatlar va konsultatsiyalar"
+          icon={MessageCircle}
+        />
 
-      {/* Tabs */}
-      <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ mb: 3 }}>
-        <Tab label="Mening maslahatlarim" />
-      </Tabs>
-
-      {/* Maslahatlar ro'yxati */}
-      <Grid container spacing={3}>
-        {consultations.length > 0 ? (
-          consultations.map((consultation) => (
-            <Grid item xs={12} md={6} lg={4} key={consultation.id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Typography variant="h6">{consultation.title}</Typography>
-                    {getStatusChip(consultation.status)}
-                  </Box>
-
-                  {consultation.description && (
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                      {consultation.description}
-                    </Typography>
-                  )}
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Person sx={{ fontSize: 18, mr: 1 }} />
-                    <Typography variant="body2">
-                      O'qituvchi: <strong>{consultation.teacher_name || 'Noma\'lum'}</strong>
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Event sx={{ fontSize: 18, mr: 1 }} />
-                    <Typography variant="body2">
-                      {consultation.scheduled_at
-                        ? new Date(consultation.scheduled_at).toLocaleString('uz-UZ')
-                        : 'Vaqt belgilanmagan'}
-                    </Typography>
-                  </Box>
-
-                  {consultation.notes && (
-                    <Box sx={{ bgcolor: 'grey.100', p: 2, borderRadius: 1, mb: 2 }}>
-                      <Typography variant="caption" display="block">
-                        <strong>Izoh:</strong> {consultation.notes}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  <Box sx={{ mt: 'auto', display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    {consultation.status === 'pending' && consultation.is_teacher && (
-                      <>
-                        <Button size="small" variant="contained" color="success" onClick={() => handleAccept(consultation.id)}>
-                          Qabul qilish
-                        </Button>
-                        <Button size="small" variant="outlined" color="error" onClick={() => handleReject(consultation.id)}>
-                          Rad etish
-                        </Button>
-                      </>
-                    )}
-                    {consultation.status === 'accepted' && consultation.is_teacher && (
-                      <Button size="small" variant="contained" onClick={() => handleComplete(consultation.id)}>
-                        Yakunlash
-                      </Button>
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))
-        ) : (
-          <Grid item xs={12}>
-            <Box sx={{ textAlign: 'center', py: 10 }}>
-              <Event sx={{ fontSize: 80, color: 'grey.300', mb: 3 }} />
-              <Typography variant="h6" color="text.secondary">
-                Hozircha maslahat yo'q
-              </Typography>
-            </Box>
-          </Grid>
-        )}
-      </Grid>
-
-      {/* Maslahat so'rash dialogi */}
-      <Dialog open={requestOpen} onClose={() => setRequestOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Yangi maslahat so'rash</Typography>
-            <IconButton onClick={() => setRequestOpen(false)}>
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
-            <TextField
-              label="Mavzu"
-              name="title"
-              value={requestData.title}
-              onChange={handleInputChange}
-              fullWidth
-              required
-            />
-
-            <TextField
-              label="Tavsif (ixtiyoriy)"
-              name="description"
-              value={requestData.description}
-              onChange={handleInputChange}
-              multiline
-              rows={3}
-              fullWidth
-            />
-
-            <FormControl fullWidth required>
-              <InputLabel>O'qituvchi tanlang</InputLabel>
-              <Select
-                name="teacher"
-                value={requestData.teacher}
-                onChange={handleInputChange}
-                label="O'qituvchi tanlang"
-              >
-                {teachers.length > 0 ? (
-                  teachers.map((teacher) => (
-                    <MenuItem key={teacher.id} value={teacher.id}>
-                      {teacher.user_name || teacher.full_name} - {teacher.subject_display || teacher.subject}
-                    </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem disabled>O'qituvchilar yuklanmoqda...</MenuItem>
-                )}
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Sana va vaqt"
-              name="scheduled_at"
-              type="datetime-local"
-              value={requestData.scheduled_at}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              InputLabelProps={{ shrink: true }}
-            />
-          </Box>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={() => setRequestOpen(false)}>Bekor qilish</Button>
-          <Button
-            onClick={handleRequest}
-            variant="contained"
-            disabled={!requestData.title || !requestData.teacher || !requestData.scheduled_at}
+        {/* Tabs & Search */}
+        <Box
+          sx={{
+            bgcolor: 'rgba(255,255,255,0.95)',
+            borderRadius: 3,
+            p: 2,
+            mb: 3,
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          }}
+        >
+          <Tabs
+            value={tabValue}
+            onChange={(e, v) => {
+              setTabValue(v);
+              setPage(1);
+            }}
+            sx={{ mb: 2 }}
           >
-            Yuborish
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+            <Tab label={getTabLabel(0)} />
+            <Tab label={getTabLabel(1)} />
+            <Tab label={getTabLabel(2)} />
+            <Tab label={getTabLabel(3)} />
+          </Tabs>
+
+          <SearchBar
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Mavzu yoki ishtirokchi ismi..."
+          />
+        </Box>
+
+        {/* Content */}
+        {loading ? (
+          <LoadingSpinner message="Maslahatlar yuklanmoqda..." />
+        ) : filteredConsultations.length === 0 ? (
+          <EmptyState
+            icon={MessageCircle}
+            title="Maslahatlar topilmadi"
+            message={
+              searchQuery
+                ? "Qidiruv bo'yicha hech narsa topilmadi."
+                : tabValue === 1
+                ? "Kutilayotgan maslahatlar yo'q."
+                : tabValue === 2
+                ? "Qabul qilingan maslahatlar yo'q."
+                : tabValue === 3
+                ? "Tugallangan maslahatlar yo'q."
+                : "Hozircha maslahatlar yo'q. Yangi maslahat so'rang!"
+            }
+            action="Maslahat so'rash"
+            onAction={handleCreateConsultation}
+          />
+        ) : (
+          <>
+            {/* Consultations Grid */}
+            <Grid container spacing={3}>
+              <AnimatePresence>
+                {paginatedConsultations.map((consultation, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={consultation.id}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                    >
+                      <ConsultationCard
+                        consultation={consultation}
+                        onAccept={isTeacher ? handleAccept : null}
+                        onReject={isTeacher ? handleReject : null}
+                        onJoin={handleJoin}
+                        userRole={user?.role}
+                      />
+                    </motion.div>
+                  </Grid>
+                ))}
+              </AnimatePresence>
+            </Grid>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={(e, value) => setPage(value)}
+                  size="large"
+                  sx={{
+                    '& .MuiPaginationItem-root': {
+                      bgcolor: 'rgba(255,255,255,0.9)',
+                      '&:hover': {
+                        bgcolor: 'white',
+                      },
+                    },
+                    '& .Mui-selected': {
+                      bgcolor: 'white !important',
+                    },
+                  }}
+                />
+              </Box>
+            )}
+          </>
+        )}
+
+        {/* FAB - Barcha o'qituvchilar uchun */}
+        <Fab
+          color="primary"
+          onClick={handleCreateConsultation}
+          sx={{
+            position: 'fixed',
+            bottom: 32,
+            right: 32,
+            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            width: 64,
+            height: 64,
+            boxShadow: '0 8px 32px rgba(59,130,246,0.4)',
+            '&:hover': {
+              transform: 'scale(1.1)',
+              boxShadow: '0 12px 48px rgba(59,130,246,0.6)',
+            },
+            transition: 'all 0.3s ease',
+          }}
+        >
+          <Plus size={28} />
+        </Fab>
+
+        {/* Maslahat yaratish modali */}
+        <ConsultationCreateModal
+          open={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onSuccess={handleCreateSuccess}
+        />
+      </Container>
+    </Box>
   );
 };
 
