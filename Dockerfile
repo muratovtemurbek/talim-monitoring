@@ -1,5 +1,6 @@
 FROM python:3.11-slim
 
+# Cache bust v2 - Frontend build included
 # Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
