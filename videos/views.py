@@ -74,8 +74,9 @@ class VideoViewSet(viewsets.ModelViewSet):
         video.teacher.total_points += 15
         video.teacher.monthly_points += 15
         video.teacher.update_level()
+        video.teacher.save()
 
-        return Response({'message': 'Video tasdiqlandi'})
+        return Response({'message': 'Video tasdiqlandi', 'points': 15})
 
     @action(detail=True, methods=['post'])
     def increment_view(self, request, pk=None):

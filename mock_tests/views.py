@@ -35,7 +35,8 @@ SUBJECT_MAPPING = {
 }
 
 
-class MockTestViewSet(viewsets.ReadOnlyModelViewSet):
+class MockTestViewSet(viewsets.ModelViewSet):
+    """Mock Test CRUD - Admin create/update/delete, Teachers read only"""
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -81,6 +82,24 @@ class MockTestViewSet(viewsets.ReadOnlyModelViewSet):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
+    def create(self, request, *args, **kwargs):
+        """Test yaratish - faqat admin"""
+        if not request.user.is_staff and request.user.role not in ['admin', 'superadmin']:
+            return Response({'error': 'Ruxsat yo\'q'}, status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        """Test yangilash - faqat admin"""
+        if not request.user.is_staff and request.user.role not in ['admin', 'superadmin']:
+            return Response({'error': 'Ruxsat yo\'q'}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """Test o'chirish - faqat admin"""
+        if not request.user.is_staff and request.user.role not in ['admin', 'superadmin']:
+            return Response({'error': 'Ruxsat yo\'q'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'])
     def submit(self, request, pk=None):

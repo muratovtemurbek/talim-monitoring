@@ -118,8 +118,8 @@ class MaterialViewSet(viewsets.ModelViewSet):
         # Ballarni qo'shish
         material.teacher.total_points += 10
         material.teacher.monthly_points += 10
-        material.teacher.save()
         material.teacher.update_level()
+        material.teacher.save()
 
         return Response({'message': 'Material tasdiqlandi', 'points_added': 10})
 
