@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# Frontend (alohida deploy)
+frontend
+
+# Local files
+*.sqlite3
+.env.local
+*.log
+media/*
+!media/.gitkeep
+
+# Tests
+.pytest_cache
+htmlcov
+.coverage

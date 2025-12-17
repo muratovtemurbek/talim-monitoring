@@ -2,7 +2,10 @@
 nixPkgs = ["python311", "postgresql"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = ["python -m pip install -r requirements.txt"]
+
+[phases.build]
+cmds = ["python manage.py collectstatic --noinput"]
 
 [start]
-cmd = "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn edu_monitoring.wsgi"
+cmd = "python manage.py migrate && gunicorn edu_monitoring.wsgi --bind 0.0.0.0:$PORT"
