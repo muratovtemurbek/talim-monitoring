@@ -15,11 +15,15 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key-change-in
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # ALLOWED_HOSTS - Railway va boshqa hostlar
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app').split(',')
+_allowed_hosts = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts.split(',') if h.strip()]
+# Railway uchun barcha subdomenlarni qo'shish
+ALLOWED_HOSTS += ['.railway.app', '.up.railway.app']
 
 # CSRF trusted origins - Railway uchun
 CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
+    'https://*.up.railway.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ]
