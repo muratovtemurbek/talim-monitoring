@@ -11,13 +11,57 @@ from .serializers import (
     TestAttemptSerializer,
     QuestionWithAnswerSerializer
 )
+from teachers.models import Teacher
+
+
+# Teacher subject ni MockTest subject ga mapping
+# Endi barcha fanlar bir xil, lekin 'literature' va 'other' uchun maxsus
+SUBJECT_MAPPING = {
+    'math': 'math',
+    'physics': 'physics',
+    'chemistry': 'chemistry',
+    'biology': 'biology',
+    'history': 'history',
+    'geography': 'geography',
+    'english': 'english',
+    'russian': 'russian',
+    'uzbek': 'uzbek',
+    'informatics': 'informatics',
+    'pedagogy': 'pedagogy',
+    'psychology': 'psychology',
+    'literature': 'uzbek',  # Adabiyot -> O'zbek tili testlari
+    'it': 'informatics',  # Eski 'it' qiymati uchun
+    'other': None,  # Boshqa - barcha testlar
+}
 
 
 class MockTestViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        user = self.request.user
         queryset = MockTest.objects.all()
+
+        # Admin va superadmin barcha testlarni ko'radi
+        if user.role in ['admin', 'superadmin'] or user.is_staff:
+            pass  # Hamma testlar
+        else:
+            # O'qituvchi faqat o'z faniga tegishli testlarni ko'radi
+            try:
+                teacher = Teacher.objects.get(user=user)
+                teacher_subject = teacher.subject
+
+                # Teacher subject ni MockTest subject ga map qilish
+                mock_test_subject = SUBJECT_MAPPING.get(teacher_subject)
+
+                if mock_test_subject:
+                    queryset = queryset.filter(subject=mock_test_subject)
+                # Agar 'other' bo'lsa yoki mapping yo'q bo'lsa - barcha testlar
+            except Teacher.DoesNotExist:
+                # Teacher profili yo'q - barcha testlar
+                pass
+
+        # Query params orqali qo'shimcha filter (ixtiyoriy)
         subject = self.request.query_params.get('subject', None)
         difficulty = self.request.query_params.get('difficulty', None)
 

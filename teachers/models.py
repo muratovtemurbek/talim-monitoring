@@ -17,10 +17,14 @@ class Teacher(models.Model):
         ('chemistry', 'Kimyo'),
         ('biology', 'Biologiya'),
         ('history', 'Tarix'),
+        ('geography', 'Geografiya'),
         ('literature', 'Adabiyot'),
+        ('uzbek', "O'zbek tili"),
         ('english', 'Ingliz tili'),
         ('russian', 'Rus tili'),
-        ('it', 'Informatika'),
+        ('informatics', 'Informatika'),
+        ('pedagogy', 'Pedagogika'),
+        ('psychology', 'Psixologiya'),
         ('other', 'Boshqa'),
     ]
 
