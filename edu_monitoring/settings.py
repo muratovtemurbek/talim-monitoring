@@ -1,13 +1,18 @@
 import os
 from pathlib import Path
 from datetime import timedelta
-from dotenv import load_dotenv
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# .env faylidan o'qish
-load_dotenv(BASE_DIR / '.env')
+# .env faqat lokal development uchun (production da ishlamaydi)
+try:
+    from dotenv import load_dotenv
+    env_file = BASE_DIR / '.env'
+    if env_file.exists():
+        load_dotenv(env_file, override=False)  # Environment variableni override qilmasin
+except ImportError:
+    pass  # python-dotenv yo'q bo'lsa, davom etadi
 
 # Xavfsizlik sozlamalari - .env dan o'qiladi
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key-change-in-production')
