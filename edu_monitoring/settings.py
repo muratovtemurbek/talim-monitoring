@@ -101,10 +101,16 @@ WSGI_APPLICATION = 'edu_monitoring.wsgi.application'
 # Database - Railway PostgreSQL yoki local SQLite
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+# Debug: DATABASE_URL ni tekshirish
+print(f"DATABASE_URL mavjud: {bool(DATABASE_URL)}")
+if DATABASE_URL:
+    print(f"DATABASE_URL boshlanishi: {DATABASE_URL[:30]}...")
+
 if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
     }
+    print("PostgreSQL ishlatilmoqda")
 else:
     DATABASES = {
         'default': {
@@ -112,6 +118,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+    print("SQLite ishlatilmoqda (DATABASE_URL topilmadi)")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
