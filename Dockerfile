@@ -21,14 +21,10 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy frontend first and build
-COPY frontend/package*.json ./frontend/
+# Copy frontend and build
+COPY frontend/ ./frontend/
 WORKDIR /app/frontend
-RUN npm ci --only=production=false
-
-# Copy frontend source and build
-COPY frontend/ ./
-RUN npm run build
+RUN npm install --legacy-peer-deps && npm run build
 
 # Back to main directory
 WORKDIR /app
