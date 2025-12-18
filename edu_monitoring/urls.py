@@ -34,9 +34,9 @@ def api_root(request):
     })
 
 
-# React frontend index.html mavjudligini tekshirish
+# React frontend - Docker build da doim mavjud
 REACT_BUILD_PATH = os.path.join(settings.BASE_DIR, 'frontend', 'build')
-SERVE_REACT = os.path.exists(os.path.join(REACT_BUILD_PATH, 'index.html'))
+SERVE_REACT = True  # Production da doim True
 
 urlpatterns = [
     # API Root (faqat React build yo'q bo'lsa)
