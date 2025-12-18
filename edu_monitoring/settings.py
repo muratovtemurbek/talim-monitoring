@@ -104,10 +104,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'edu_monitoring.wsgi.application'
 
 # Database - Railway PostgreSQL yoki local SQLite
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Railway turli nom bilan berishi mumkin
+DATABASE_URL = (
+    os.environ.get('DATABASE_URL') or
+    os.environ.get('DATABASE_PRIVATE_URL') or
+    os.environ.get('DATABASE_PUBLIC_URL')
+)
 
 # Debug: DATABASE_URL ni tekshirish
 print(f"DATABASE_URL mavjud: {bool(DATABASE_URL)}")
+print(f"Env variables: DATABASE_URL={bool(os.environ.get('DATABASE_URL'))}, PRIVATE={bool(os.environ.get('DATABASE_PRIVATE_URL'))}, PUBLIC={bool(os.environ.get('DATABASE_PUBLIC_URL'))}")
 if DATABASE_URL:
     print(f"DATABASE_URL boshlanishi: {DATABASE_URL[:30]}...")
 
