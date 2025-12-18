@@ -104,25 +104,44 @@ TEMPLATES = [
 WSGI_APPLICATION = 'edu_monitoring.wsgi.application'
 
 # Database - Railway PostgreSQL yoki local SQLite
-# Railway turli nom bilan berishi mumkin
 DATABASE_URL = (
     os.environ.get('DATABASE_URL') or
     os.environ.get('DATABASE_PRIVATE_URL') or
     os.environ.get('DATABASE_PUBLIC_URL')
 )
 
-# Debug: DATABASE_URL ni tekshirish
+# Railway alohida variablelar ham beradi
+PGHOST = os.environ.get('PGHOST')
+PGUSER = os.environ.get('PGUSER')
+PGPASSWORD = os.environ.get('PGPASSWORD')
+PGDATABASE = os.environ.get('PGDATABASE')
+PGPORT = os.environ.get('PGPORT', '5432')
+
+# Debug
 print(f"DATABASE_URL mavjud: {bool(DATABASE_URL)}")
-print(f"Env variables: DATABASE_URL={bool(os.environ.get('DATABASE_URL'))}, PRIVATE={bool(os.environ.get('DATABASE_PRIVATE_URL'))}, PUBLIC={bool(os.environ.get('DATABASE_PUBLIC_URL'))}")
-if DATABASE_URL:
-    print(f"DATABASE_URL boshlanishi: {DATABASE_URL[:30]}...")
+print(f"PGHOST mavjud: {bool(PGHOST)}")
 
 if DATABASE_URL:
+    # DATABASE_URL orqali ulash
     DATABASES = {
         'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
     }
-    print("PostgreSQL ishlatilmoqda")
+    print("PostgreSQL ishlatilmoqda (DATABASE_URL orqali)")
+elif PGHOST and PGUSER and PGPASSWORD and PGDATABASE:
+    # Alohida variablelar orqali ulash
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': PGDATABASE,
+            'USER': PGUSER,
+            'PASSWORD': PGPASSWORD,
+            'HOST': PGHOST,
+            'PORT': PGPORT,
+        }
+    }
+    print("PostgreSQL ishlatilmoqda (alohida variablelar orqali)")
 else:
+    # Local development uchun SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

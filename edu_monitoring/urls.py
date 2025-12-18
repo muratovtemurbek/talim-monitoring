@@ -21,9 +21,10 @@ def api_root(request):
         'database': {
             'engine': db_engine,
             'is_postgres': is_postgres,
-            'DATABASE_URL_exists': bool(os.environ.get('DATABASE_URL')),
-            'DATABASE_PRIVATE_URL_exists': bool(os.environ.get('DATABASE_PRIVATE_URL')),
-            'DATABASE_PUBLIC_URL_exists': bool(os.environ.get('DATABASE_PUBLIC_URL')),
+            'DATABASE_URL': bool(os.environ.get('DATABASE_URL')),
+            'PGHOST': bool(os.environ.get('PGHOST')),
+            'PGUSER': bool(os.environ.get('PGUSER')),
+            'PGDATABASE': bool(os.environ.get('PGDATABASE')),
         },
         'endpoints': {
             'admin': '/admin/',
