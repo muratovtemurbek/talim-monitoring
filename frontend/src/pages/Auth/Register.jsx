@@ -37,6 +37,7 @@ const Register = () => {
     username: '',
     email: '',
     password: '',
+    password2: '',
     first_name: '',
     last_name: '',
     phone: '',
@@ -60,14 +61,34 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.username || !formData.password || !formData.first_name || !formData.last_name) {
+    if (!formData.username || !formData.password || !formData.password2 || !formData.first_name || !formData.last_name) {
       toast.error("Majburiy maydonlarni to'ldiring!");
+      return;
+    }
+
+    if (formData.password !== formData.password2) {
+      toast.error("Parollar mos kelmadi!");
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      toast.error("Parol kamida 8 ta belgidan iborat bo'lishi kerak!");
       return;
     }
 
     setLoading(true);
     try {
-      await axiosInstance.post('/auth/register/', formData);
+      // Faqat backend qabul qiladigan maydonlarni jo'natish
+      const registerData = {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        password2: formData.password2,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone,
+      };
+      await axiosInstance.post('/auth/register/', registerData);
       toast.success("Ro'yxatdan o'tdingiz! Endi kiring.");
       navigate('/login');
     } catch (error) {
@@ -356,7 +377,7 @@ const Register = () => {
                     </TextField>
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       required
@@ -375,6 +396,26 @@ const Register = () => {
                             <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
                               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                             </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      required
+                      label="Parolni tasdiqlang"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password2}
+                      onChange={(e) => setFormData({ ...formData, password2: e.target.value })}
+                      error={formData.password2 && formData.password !== formData.password2}
+                      helperText={formData.password2 && formData.password !== formData.password2 ? "Parollar mos kelmadi" : ""}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Lock size={18} color="#3b82f6" />
                           </InputAdornment>
                         ),
                       }}
