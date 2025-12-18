@@ -10,10 +10,21 @@ import os
 
 def api_root(request):
     """API Root - Ma'lumot sahifasi"""
+    # Database debug info
+    db_engine = settings.DATABASES['default']['ENGINE']
+    is_postgres = 'postgresql' in db_engine or 'psycopg' in db_engine
+
     return JsonResponse({
         'name': 'Ta\'lim Monitoring API',
         'version': '1.0.0',
         'status': 'running',
+        'database': {
+            'engine': db_engine,
+            'is_postgres': is_postgres,
+            'DATABASE_URL_exists': bool(os.environ.get('DATABASE_URL')),
+            'DATABASE_PRIVATE_URL_exists': bool(os.environ.get('DATABASE_PRIVATE_URL')),
+            'DATABASE_PUBLIC_URL_exists': bool(os.environ.get('DATABASE_PUBLIC_URL')),
+        },
         'endpoints': {
             'admin': '/admin/',
             'auth': '/api/auth/',
