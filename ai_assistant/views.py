@@ -1,5 +1,3 @@
-from google import genai  # YANGI kutubxona
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -7,12 +5,21 @@ from rest_framework import status
 from django.conf import settings
 
 # Gemini API ni sozlash (v1, gemini-2.0-flash)
+client = None
+GEMINI_MODEL_NAME = "gemini-2.0-flash"
+GEMINI_INIT_ERROR = None
+
 try:
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
-    GEMINI_MODEL_NAME = "gemini-2.0-flash"  # 2.0 modelidan foydalanamiz
+    from google import genai
+    api_key = getattr(settings, 'GEMINI_API_KEY', None)
+    if api_key:
+        client = genai.Client(api_key=api_key)
+    else:
+        GEMINI_INIT_ERROR = "GEMINI_API_KEY sozlanmagan"
+except ImportError as e:
+    GEMINI_INIT_ERROR = f"google-genai kutubxonasi topilmadi: {e}"
 except Exception as e:
-    client = None
-    GEMINI_MODEL_NAME = "gemini-2.0-flash"
+    GEMINI_INIT_ERROR = f"Gemini init xatolik: {e}"
 
 
 class AIAssistantView(APIView):
@@ -30,8 +37,9 @@ class AIAssistantView(APIView):
             )
 
         if client is None:
+            error_msg = GEMINI_INIT_ERROR or 'AI klient sozlanmagan'
             return Response(
-                {'error': 'AI klient sozlanmagan'},
+                {'error': error_msg},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -102,8 +110,9 @@ class AILessonPlanView(APIView):
             )
 
         if client is None:
+            error_msg = GEMINI_INIT_ERROR or 'AI klient sozlanmagan'
             return Response(
-                {'error': 'AI klient sozlanmagan'},
+                {'error': error_msg},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -171,8 +180,9 @@ class AITestGeneratorView(APIView):
             )
 
         if client is None:
+            error_msg = GEMINI_INIT_ERROR or 'AI klient sozlanmagan'
             return Response(
-                {'error': 'AI klient sozlanmagan'},
+                {'error': error_msg},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
