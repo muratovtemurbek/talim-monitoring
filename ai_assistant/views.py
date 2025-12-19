@@ -7,7 +7,7 @@ import traceback
 
 # Gemini API ni sozlash (v1, gemini-2.0-flash)
 client = None
-GEMINI_MODEL_NAME = "gemini-1.5-flash"
+GEMINI_MODEL_NAME = "gemini-2.0-flash"
 GEMINI_INIT_ERROR = None
 
 try:
