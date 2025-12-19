@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.conf import settings
+import traceback
 
 # Gemini API ni sozlash (v1, gemini-2.0-flash)
 client = None
@@ -12,14 +13,20 @@ GEMINI_INIT_ERROR = None
 try:
     from google import genai
     api_key = getattr(settings, 'GEMINI_API_KEY', None)
+    print(f"GEMINI_API_KEY mavjud: {bool(api_key)}")
     if api_key:
         client = genai.Client(api_key=api_key)
+        print("Gemini client muvaffaqiyatli yaratildi")
     else:
         GEMINI_INIT_ERROR = "GEMINI_API_KEY sozlanmagan"
+        print(GEMINI_INIT_ERROR)
 except ImportError as e:
     GEMINI_INIT_ERROR = f"google-genai kutubxonasi topilmadi: {e}"
+    print(GEMINI_INIT_ERROR)
 except Exception as e:
     GEMINI_INIT_ERROR = f"Gemini init xatolik: {e}"
+    print(GEMINI_INIT_ERROR)
+    print(traceback.format_exc())
 
 
 class AIAssistantView(APIView):
@@ -74,6 +81,8 @@ class AIAssistantView(APIView):
             })
 
         except Exception as e:
+            print(f"AI Chat xatolik: {str(e)}")
+            print(traceback.format_exc())
             return Response(
                 {'error': f'AI xatolik: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
