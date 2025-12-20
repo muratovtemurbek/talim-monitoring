@@ -9,7 +9,7 @@ import time
 # Gemini API ni sozlash (v1)
 client = None
 # Modellar ro'yxati - biri ishlamasa keyingisiga o'tadi
-GEMINI_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-exp-1206"]
+GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"]
 GEMINI_MODEL_NAME = GEMINI_MODELS[0]
 GEMINI_INIT_ERROR = None
 
