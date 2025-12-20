@@ -753,7 +753,7 @@ class AnalyticsOverviewView(APIView):
         overview = {
             'total_teachers': Teacher.objects.count(),
             'active_teachers': Teacher.objects.filter(
-                teacheractivity__date__gte=thirty_days_ago
+                activities__date__gte=thirty_days_ago
             ).distinct().count(),
             'total_schools': School.objects.count(),
             'total_materials': Material.objects.count(),

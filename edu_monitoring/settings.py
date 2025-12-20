@@ -179,10 +179,13 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Static papkalar - React build papkasini qo'shish
-STATICFILES_DIRS = [
-    BASE_DIR / 'frontend' / 'build',  # React build - JS, CSS, media
-]
+# Static papkalar - React build papkasini qo'shish (agar mavjud bo'lsa)
+STATICFILES_DIRS = []
+
+# React build papkasi (agar mavjud bo'lsa)
+_frontend_build = BASE_DIR / 'frontend' / 'build'
+if _frontend_build.exists():
+    STATICFILES_DIRS.append(_frontend_build)
 
 # Django static papkasi (agar mavjud bo'lsa)
 _static_dir = BASE_DIR / 'static'
@@ -192,8 +195,9 @@ if _static_dir.exists():
 # Whitenoise storage - Railway uchun (compressed)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Whitenoise - React build fayllarini root dan serve qilish
-WHITENOISE_ROOT = BASE_DIR / 'frontend' / 'build'
+# Whitenoise - React build fayllarini root dan serve qilish (agar mavjud bo'lsa)
+if _frontend_build.exists():
+    WHITENOISE_ROOT = _frontend_build
 
 # Media files
 MEDIA_URL = '/media/'

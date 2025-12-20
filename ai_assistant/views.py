@@ -4,10 +4,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from django.conf import settings
 import traceback
+import time
 
-# Gemini API ni sozlash (v1, gemini-2.0-flash)
+# Gemini API ni sozlash (v1)
 client = None
-GEMINI_MODEL_NAME = "gemini-2.0-flash"
+# Modellar ro'yxati - biri ishlamasa keyingisiga o'tadi
+GEMINI_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+GEMINI_MODEL_NAME = GEMINI_MODELS[0]
 GEMINI_INIT_ERROR = None
 
 try:
@@ -27,6 +30,37 @@ except Exception as e:
     GEMINI_INIT_ERROR = f"Gemini init xatolik: {e}"
     print(GEMINI_INIT_ERROR)
     print(traceback.format_exc())
+
+
+def generate_with_fallback(client, prompt, max_retries=2):
+    """Gemini API bilan so'rov yuborish, xatolikda boshqa modelga o'tish"""
+    last_error = None
+
+    for model_name in GEMINI_MODELS:
+        for attempt in range(max_retries):
+            try:
+                result = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                return getattr(result, "text", None) or ""
+            except Exception as e:
+                last_error = e
+                error_str = str(e)
+
+                # Quota xatoligi - keyingi modelga o'tish
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    print(f"Model {model_name} kvotasi tugagan, keyingi modelga o'tish...")
+                    break  # Keyingi modelga o'tish
+
+                # Boshqa xatolik - retry
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                    continue
+                break
+
+    # Barcha modellar ishlamadi
+    raise last_error
 
 
 class AIAssistantView(APIView):
@@ -66,13 +100,8 @@ class AIAssistantView(APIView):
 
             full_prompt = f"{system_prompt}\n\nFoydalanuvchi savoli: {message}"
 
-            # Yangi v1 uslubi: client.models.generate_content(...)
-            result = client.models.generate_content(
-                model=GEMINI_MODEL_NAME,
-                contents=full_prompt,
-            )
-
-            answer = getattr(result, "text", None) or ""
+            # Fallback bilan so'rov yuborish
+            answer = generate_with_fallback(client, full_prompt)
 
             return Response({
                 'message': message,
@@ -148,11 +177,8 @@ class AILessonPlanView(APIView):
             Javobni strukturalangan, sarlavhalar bilan, o'qishga qulay formatda ber.
             """
 
-            result = client.models.generate_content(
-                model=GEMINI_MODEL_NAME,
-                contents=prompt,
-            )
-            lesson_plan = getattr(result, "text", None) or ""
+            # Fallback bilan so'rov yuborish
+            lesson_plan = generate_with_fallback(client, prompt)
 
             return Response({
                 'subject': subject,
@@ -227,11 +253,8 @@ class AITestGeneratorView(APIView):
             Savollarni {difficulty_text} darajada yaratib ber.
             """
 
-            result = client.models.generate_content(
-                model=GEMINI_MODEL_NAME,
-                contents=prompt,
-            )
-            questions_text = getattr(result, "text", None) or ""
+            # Fallback bilan so'rov yuborish
+            questions_text = generate_with_fallback(client, prompt)
 
             return Response({
                 'subject': subject,
